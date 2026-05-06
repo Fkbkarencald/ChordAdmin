@@ -5,6 +5,8 @@ enum JobError: LocalizedError {
     case missingTools([String])
     case downloadFailed(String)
     case conversionFailed(String)
+    case metadataFailed(String)
+    case audioHealthFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -14,12 +16,21 @@ enum JobError: LocalizedError {
             return "Download failed: \(msg)"
         case .conversionFailed(let msg):
             return "Conversion failed: \(msg)"
+        case .metadataFailed(let msg):
+            return "Metadata extraction failed: \(msg)"
+        case .audioHealthFailed(let msg):
+            return "Audio health analysis failed: \(msg)"
         }
     }
 }
 
 @MainActor
 final class JobManager: ObservableObject {
+
+    // MARK: - Backend config
+    private static let backendBaseUrl    = "http://localhost:5001"
+    private static let defaultBeatModel  = "auto"
+    private static let defaultChordModel = "chord-cnn-lstm"
 
     @Published var currentJob: AnalysisJob?
     @Published var logOutput: String = ""
@@ -31,6 +42,24 @@ final class JobManager: ObservableObject {
         guard !isRunning else { return }
 
         let cleanedUrl = Self.cleanYouTubeURL(url)
+
+        // — URL cache check —
+        if let cachedFolder = LocalFileStore.cachedJobFolder(for: cleanedUrl) {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            if let data = try? Data(contentsOf: cachedFolder.appendingPathComponent("job.json")),
+               let cached = try? decoder.decode(AnalysisJob.self, from: data) {
+                jobFolder  = cachedFolder
+                currentJob = cached
+                logOutput  = "(Loaded from cache — song and analysis results are reused)\n"
+                isRunning  = false
+                return
+            } else {
+                // Stale entry — evict and proceed normally
+                LocalFileStore.evictURLCache(url: cleanedUrl)
+            }
+        }
+
         let jobId = UUID().uuidString
         var job = AnalysisJob(
             id: jobId,
@@ -125,10 +154,329 @@ final class JobManager: ObservableObject {
             }
 
             job.analysisWavPath = wavPath
-            job.status = .completed
-            job.completedAt = Date()
             persist(job)
             log("Done. analysis.wav written to: \(wavPath)\n")
+
+            // — Extract metadata —
+            job.status = .extractingMetadata
+            persist(job)
+            log("Extracting metadata with ffprobe…\n")
+
+            let metaPath = folder.appendingPathComponent("metadata.json").path
+            let metaResult = try await ProcessRunner.run(
+                executablePath: ToolChecker.ffprobe,
+                arguments: [
+                    "-v", "quiet",
+                    "-print_format", "json",
+                    "-show_format",
+                    "-show_streams",
+                    wavPath
+                ]
+            )
+
+            guard metaResult.exitCode == 0 else {
+                throw JobError.metadataFailed("ffprobe exited with code \(metaResult.exitCode)")
+            }
+
+            guard let metaData = metaResult.output.data(using: .utf8) else {
+                throw JobError.metadataFailed("ffprobe produced no output")
+            }
+            try metaData.write(to: URL(fileURLWithPath: metaPath))
+
+            let parsed = try Self.parseFFprobeOutput(metaData)
+            job.metadataPath    = metaPath
+            job.durationSeconds = parsed.duration
+            job.sampleRate      = parsed.sampleRate
+            job.channels        = parsed.channels
+            job.codecName       = parsed.codecName
+            job.bitRate         = parsed.bitRate
+            job.fileSizeBytes   = parsed.fileSizeBytes
+
+            persist(job)
+            log("Metadata saved to: \(metaPath)\n")
+
+            // — Analyse audio health —
+            job.status = .analysingAudioHealth
+            persist(job)
+            log("Analysing audio health...\n")
+
+            // Volume detection
+            let volResult = try await ProcessRunner.run(
+                executablePath: ToolChecker.ffmpeg,
+                arguments: ["-i", wavPath, "-af", "volumedetect", "-f", "null", "-"],
+                onOutput: { [weak self] text in
+                    Task { @MainActor [weak self] in self?.log(text) }
+                }
+            )
+            let (meanVol, maxVol) = Self.parseVolumeDetect(volResult.output)
+            if let m = meanVol { log("Mean volume: \(m) dB\n") }
+            if let m = maxVol  { log("Max volume:  \(m) dB\n") }
+
+            // Silence detection
+            let silResult = try await ProcessRunner.run(
+                executablePath: ToolChecker.ffmpeg,
+                arguments: ["-i", wavPath, "-af", "silencedetect=noise=-40dB:d=0.5", "-f", "null", "-"],
+                onOutput: { [weak self] text in
+                    Task { @MainActor [weak self] in self?.log(text) }
+                }
+            )
+            let silenceRegions = Self.parseSilenceDetect(silResult.output)
+            let totalSilence = silenceRegions.reduce(0.0) { $0 + $1.duration }
+            log("Silence regions found: \(silenceRegions.count)\n")
+
+            // Warnings
+            var warnings: [String] = []
+            if let max = maxVol, max > -0.5 {
+                warnings.append("Possible clipping or very hot master")
+            }
+            if let mean = meanVol, mean < -35 {
+                warnings.append("Very quiet audio")
+            }
+            if let dur = job.durationSeconds, dur > 0, (totalSilence / dur) > 0.2 {
+                warnings.append("Large silent sections detected")
+            }
+
+            // Save audio.health.json
+            let healthPath = folder.appendingPathComponent("audio.health.json").path
+            let healthPayload: [String: Any] = [
+                "meanVolumeDb": meanVol as Any,
+                "maxVolumeDb":  maxVol as Any,
+                "silenceRegions": silenceRegions.map { [
+                    "start":    $0.start,
+                    "end":      $0.end,
+                    "duration": $0.duration
+                ] },
+                "totalSilenceDurationSeconds": totalSilence,
+                "warnings": warnings
+            ]
+            let healthData = try JSONSerialization.data(withJSONObject: healthPayload, options: .prettyPrinted)
+            try healthData.write(to: URL(fileURLWithPath: healthPath))
+
+            job.audioHealthPath              = healthPath
+            job.meanVolumeDb                 = meanVol
+            job.maxVolumeDb                  = maxVol
+            job.silenceRegionCount           = silenceRegions.count
+            job.totalSilenceDurationSeconds  = totalSilence
+
+            persist(job)
+            log("Audio health saved to: \(healthPath)\n")
+            if !warnings.isEmpty { log("Warnings: \(warnings.joined(separator: "; "))\n") }
+
+            // — Check backend —
+            job.status = .checkingAnalysisBackend
+            persist(job)
+            log("Checking backend at \(Self.backendBaseUrl)\u{2026}\n")
+
+            let backendAvailable = await Self.checkBackendHealth(baseUrl: Self.backendBaseUrl)
+            job.analysisBackendAvailable = backendAvailable
+            job.backendBaseUrl = Self.backendBaseUrl
+
+            if !backendAvailable {
+                job.backendErrorMessage = "Backend unavailable at \(Self.backendBaseUrl)"
+                log("Backend unavailable. Job completed with warnings.\n")
+                job.status = .completedWithWarnings
+                job.completedAt = Date()
+                persist(job)
+            } else {
+                log("Backend available.\n")
+
+                let wavURL = URL(fileURLWithPath: wavPath)
+
+                // — Detect beats —
+                job.status = .detectingBeats
+                job.requestedBeatModel = Self.defaultBeatModel
+                persist(job)
+                log("Detecting beats (model: \(Self.defaultBeatModel))\u{2026}\n")
+
+                let beatPath = folder.appendingPathComponent("beat.detection.json").path
+                do {
+                    let beatData = try await Self.postAudioFile(
+                        to: "\(Self.backendBaseUrl)/api/detect-beats",
+                        fileURL: wavURL,
+                        params: ["model": Self.defaultBeatModel]
+                    )
+                    try beatData.write(to: URL(fileURLWithPath: beatPath))
+                    job.beatDetectionPath = beatPath
+                    let (bpm, beatCount, resolvedModel) = Self.parseBeatResponse(beatData)
+                    job.bpm              = bpm
+                    job.beatCount        = beatCount
+                    job.resolvedBeatModel = resolvedModel
+                    persist(job)
+                    let beatCached = (try? JSONSerialization.jsonObject(with: beatData) as? [String: Any])?["cached"] as? Bool == true
+                    log("Beat detection saved to: \(beatPath)\(beatCached ? " (cached)" : "")\n")
+                    if let b = bpm        { log("BPM: \(b)\n") }
+                    if let bc = beatCount  { log("Beat count: \(bc)\n") }
+                    if let rm = resolvedModel { log("Resolved beat model: \(rm)\n") }
+
+                    // — Generate beat grid —
+                    job.status = .generatingBeatGrid
+                    persist(job)
+                    log("Generating beat grid…\n")
+                    let gridPath = folder.appendingPathComponent("beat.grid.json").path
+                    let (gridPayload, barCount) = Self.generateBeatGrid(from: beatData, bpm: bpm, barAlignmentOffset: 0)
+                    if !gridPayload.isEmpty,
+                       let gridData = try? JSONSerialization.data(withJSONObject: gridPayload, options: .prettyPrinted) {
+                        try gridData.write(to: URL(fileURLWithPath: gridPath))
+                        job.beatGridPath            = gridPath
+                        job.barCount                = barCount
+                        job.barAlignmentOffset      = 0
+                        job.estimatedTimeSignature  = gridPayload["estimatedTimeSignature"] as? String
+                        persist(job)
+                        log("Beat grid saved to: \(gridPath)\n")
+                        log("Bar count: \(barCount)\n")
+                    }
+                } catch {
+                    log("Beat detection failed: \(error.localizedDescription)\n")
+                }
+
+                // — Recognise chords —
+                job.status = .recognizingChords
+                job.chordModel = Self.defaultChordModel
+                persist(job)
+                log("Recognising chords (model: \(Self.defaultChordModel))\u{2026}\n")
+
+                let chordPath = folder.appendingPathComponent("chord.recognition.json").path
+                do {
+                    let chordData = try await Self.postAudioFile(
+                        to: "\(Self.backendBaseUrl)/api/recognize-chords",
+                        fileURL: wavURL,
+                        params: ["model": Self.defaultChordModel]
+                    )
+                    try chordData.write(to: URL(fileURLWithPath: chordPath))
+                    job.chordRecognitionPath = chordPath
+                    let (chordCount, previewChords, cleanedData) = Self.parseChordResponse(chordData)
+                    job.chordCount   = chordCount
+                    job.chordPreview = previewChords
+                    persist(job)
+                    let chordCached = (try? JSONSerialization.jsonObject(with: chordData) as? [String: Any])?["cached"] as? Bool == true
+                    log("Chord recognition saved to: \(chordPath)\(chordCached ? " (cached)" : "")\n")
+                    if let cc = job.chordCount { log("Chord count: \(cc)\n") }
+
+                    // Write chord.cleaned.json from the normalised payload
+                    if let cleaned = cleanedData {
+                        let cleanedPath = folder.appendingPathComponent("chord.cleaned.json").path
+                        try cleaned.write(to: URL(fileURLWithPath: cleanedPath))
+                        job.chordCleanedPath = cleanedPath
+                        persist(job)
+                        log("Chord cleanup saved to: \(cleanedPath)\n")
+                    }
+                } catch {
+                    log("Chord recognition failed: \(error.localizedDescription)\n")
+                }
+
+                // — Generate chord chart draft —
+                job.status = .generatingChordChart
+                persist(job)
+                log("Generating chord chart draft...\n")
+                if let gridPath    = job.beatGridPath,
+                   let cleanedPath = job.chordCleanedPath,
+                   let gridData    = try? Data(contentsOf: URL(fileURLWithPath: gridPath)),
+                   let cleanedData = try? Data(contentsOf: URL(fileURLWithPath: cleanedPath)) {
+                    let chartPath = folder.appendingPathComponent("chord.chart.draft.json").path
+                    let (chartPayload, chartBarCount, previewBars) = Self.generateChordChart(
+                        beatGridData:     gridData,
+                        chordCleanedData: cleanedData,
+                        beatGridPath:     gridPath,
+                        chordCleanedPath: cleanedPath
+                    )
+                    if !chartPayload.isEmpty,
+                       let chartData = try? JSONSerialization.data(withJSONObject: chartPayload, options: .prettyPrinted) {
+                        try? chartData.write(to: URL(fileURLWithPath: chartPath))
+                        job.chordChartDraftPath  = chartPath
+                        job.chordChartBarCount   = chartBarCount
+                        job.chordChartPreview    = previewBars
+                        persist(job)
+                        log("Chord chart draft saved to: \(chartPath)\n")
+                        log("Chart bars: \(chartBarCount)\n")
+                    }
+                }
+
+                // — Generate simple chord chart —
+                job.status = .generatingSimpleChart
+                persist(job)
+                log("Generating simple chord chart...\n")
+                if let draftPath = job.chordChartDraftPath,
+                   let draftData = try? Data(contentsOf: URL(fileURLWithPath: draftPath)) {
+                    let simplePath = folder.appendingPathComponent("chord.chart.simple.json").path
+                    let (simplePayload, simpleBarCount, simplePreview) = Self.generateSimpleChart(
+                        draftData: draftData,
+                        draftPath: draftPath
+                    )
+                    if !simplePayload.isEmpty,
+                       let simpleData = try? JSONSerialization.data(withJSONObject: simplePayload, options: .prettyPrinted) {
+                        try? simpleData.write(to: URL(fileURLWithPath: simplePath))
+                        job.chordChartSimplePath        = simplePath
+                        job.chordChartSimpleBarCount    = simpleBarCount
+                        job.chordChartSimplePreview     = simplePreview
+                        persist(job)
+                        log("Simple chord chart saved to: \(simplePath)\n")
+                        log("Simple chart bars: \(simpleBarCount)\n")
+                    }
+                }
+
+                // — Detect section candidates —
+                job.status = .detectingSections
+                persist(job)
+                log("Detecting section candidates...\n")
+                if let simplePath = job.chordChartSimplePath,
+                   let simpleData = try? Data(contentsOf: URL(fileURLWithPath: simplePath)) {
+                    let candidatesPath = folder.appendingPathComponent("section.candidates.json").path
+                    let (candidatesPayload, candidateCount, candidatePreview) = Self.detectSectionCandidates(
+                        simpleData: simpleData,
+                        simplePath: simplePath
+                    )
+                    if !candidatesPayload.isEmpty,
+                       let candidatesData = try? JSONSerialization.data(withJSONObject: candidatesPayload, options: .prettyPrinted) {
+                        try? candidatesData.write(to: URL(fileURLWithPath: candidatesPath))
+                        job.sectionCandidatesPath   = candidatesPath
+                        job.sectionCandidateCount   = candidateCount
+                        job.sectionCandidatePreview = candidatePreview
+                        persist(job)
+                        log("Section candidates saved to: \(candidatesPath)\n")
+                        log("Section candidates: \(candidateCount)\n")
+                    }
+                }
+
+                // — Generate performer chart (initial default config) —
+                if let simplePath = job.chordChartSimplePath,
+                   let simpleData  = try? Data(contentsOf: URL(fileURLWithPath: simplePath)) {
+                    let configPath = folder.appendingPathComponent("chart.config.json").path
+                    let configPayload: [String: Any] = [
+                        "barAlignmentOffset": job.barAlignmentOffset ?? 0,
+                        "chartStartTime":     0.0,
+                        "chartStartSource":   "auto",
+                        "chartStartBarMode":  "renumberFromOne",
+                        "includePreIntro":    false,
+                        "preIntroLabel":      "Pre-intro",
+                    ]
+                    if let configData = try? JSONSerialization.data(withJSONObject: configPayload, options: .prettyPrinted) {
+                        try? configData.write(to: URL(fileURLWithPath: configPath))
+                        job.chartConfigPath = configPath
+                        job.includePreIntro = false
+                        let performerPath = folder.appendingPathComponent("chord.chart.performer.json").path
+                        let (perfPayload, _, perfPreview) = Self.generatePerformerChart(
+                            simpleData: simpleData, configData: configData,
+                            simplePath: simplePath, configPath: configPath
+                        )
+                        if !perfPayload.isEmpty,
+                           let perfData = try? JSONSerialization.data(withJSONObject: perfPayload, options: .prettyPrinted) {
+                            try? perfData.write(to: URL(fileURLWithPath: performerPath))
+                            job.chordChartPerformerPath = performerPath
+                            job.performerChartPreview   = perfPreview
+                            persist(job)
+                            log("Performer chart saved to: \(performerPath)\n")
+                        }
+                    }
+                }
+
+                job.status = .completed
+                job.completedAt = Date()
+                persist(job)
+                log("Completed.\n")
+
+                // Save to URL cache so re-submitting the same URL is instant
+                LocalFileStore.saveURLCache(url: cleanedUrl, folderPath: folder.path)
+            }
 
         } catch {
             job.status = .failed
@@ -141,6 +489,140 @@ final class JobManager: ObservableObject {
         isRunning = false
     }
 
+    // MARK: - Bar alignment regeneration
+
+    /// Regenerates beat grid + both chord charts for the current job using `offset`.
+    /// Does NOT re-download, re-convert, re-detect beats or re-recognise chords.
+    func regenerateCharts(offset: Int) async {
+        guard var job = currentJob,
+              let folder = jobFolder,
+              let beatPath  = job.beatDetectionPath,
+              let cleanedPath = job.chordCleanedPath,
+              let beatData    = try? Data(contentsOf: URL(fileURLWithPath: beatPath)),
+              let cleanedData = try? Data(contentsOf: URL(fileURLWithPath: cleanedPath))
+        else { return }
+
+        isRunning = true
+        log("Regenerating charts with bar alignment offset \(offset)…\n")
+
+        // Beat grid
+        let (gridPayload, barCount) = Self.generateBeatGrid(from: beatData, bpm: job.bpm, barAlignmentOffset: offset)
+        guard !gridPayload.isEmpty,
+              let gridData = try? JSONSerialization.data(withJSONObject: gridPayload, options: .prettyPrinted)
+        else { isRunning = false; return }
+
+        let gridPath = folder.appendingPathComponent("beat.grid.json").path
+        try? gridData.write(to: URL(fileURLWithPath: gridPath))
+        job.beatGridPath           = gridPath
+        job.barCount               = barCount
+        job.barAlignmentOffset     = offset
+        job.estimatedTimeSignature = gridPayload["estimatedTimeSignature"] as? String
+        log("Beat grid regenerated (\(barCount) bars).\n")
+
+        // Chord chart draft
+        let chartPath = folder.appendingPathComponent("chord.chart.draft.json").path
+        let (chartPayload, chartBarCount, previewBars) = Self.generateChordChart(
+            beatGridData: gridData, chordCleanedData: cleanedData,
+            beatGridPath: gridPath, chordCleanedPath: cleanedPath
+        )
+        if !chartPayload.isEmpty,
+           let chartData = try? JSONSerialization.data(withJSONObject: chartPayload, options: .prettyPrinted) {
+            try? chartData.write(to: URL(fileURLWithPath: chartPath))
+            job.chordChartDraftPath = chartPath
+            job.chordChartBarCount  = chartBarCount
+            job.chordChartPreview   = previewBars
+            log("Chord chart draft regenerated (\(chartBarCount) bars).\n")
+
+            // Simple chord chart
+            let simplePath = folder.appendingPathComponent("chord.chart.simple.json").path
+            let (simplePayload, simpleBarCount, simplePreview) = Self.generateSimpleChart(
+                draftData: chartData, draftPath: chartPath
+            )
+            if !simplePayload.isEmpty,
+               let simpleData = try? JSONSerialization.data(withJSONObject: simplePayload, options: .prettyPrinted) {
+                try? simpleData.write(to: URL(fileURLWithPath: simplePath))
+                job.chordChartSimplePath     = simplePath
+                job.chordChartSimpleBarCount = simpleBarCount
+                job.chordChartSimplePreview  = simplePreview
+                log("Simple chord chart regenerated (\(simpleBarCount) bars).\n")
+            }
+        }
+
+        // Also regenerate performer chart if config exists
+        if let configPath = job.chartConfigPath,
+           let simplePath = job.chordChartSimplePath,
+           let simpleData = try? Data(contentsOf: URL(fileURLWithPath: simplePath)) {
+            // Update barAlignmentOffset in config
+            var configJson = (try? JSONSerialization.jsonObject(
+                with: Data(contentsOf: URL(fileURLWithPath: configPath))) as? [String: Any]) ?? [:]
+            configJson["barAlignmentOffset"] = offset
+            if let updatedCfg = try? JSONSerialization.data(withJSONObject: configJson, options: .prettyPrinted) {
+                try? updatedCfg.write(to: URL(fileURLWithPath: configPath))
+                let performerPath = folder.appendingPathComponent("chord.chart.performer.json").path
+                let (perfPayload, _, perfPreview) = Self.generatePerformerChart(
+                    simpleData: simpleData, configData: updatedCfg,
+                    simplePath: simplePath, configPath: configPath
+                )
+                if !perfPayload.isEmpty,
+                   let perfData = try? JSONSerialization.data(withJSONObject: perfPayload, options: .prettyPrinted) {
+                    try? perfData.write(to: URL(fileURLWithPath: performerPath))
+                    job.chordChartPerformerPath = performerPath
+                    job.performerChartPreview   = perfPreview
+                    log("Performer chart updated after realignment.\n")
+                }
+            }
+        }
+        job.chartsVersion = (job.chartsVersion ?? 0) + 1
+        persist(job)
+        isRunning = false
+        log("Alignment offset \(offset) applied.\n")
+    }
+
+    // MARK: - Performer chart config update
+
+    /// Updates chart.config.json and regenerates chord.chart.performer.json.
+    /// Does NOT re-run any backend analysis.
+    func updatePerformerChart(chartStartTime: Double?, includePreIntro: Bool) async {
+        guard var job = currentJob,
+              let folder     = jobFolder,
+              let simplePath = job.chordChartSimplePath,
+              let simpleData = try? Data(contentsOf: URL(fileURLWithPath: simplePath))
+        else { return }
+
+        let configPath = folder.appendingPathComponent("chart.config.json").path
+        let configPayload: [String: Any] = [
+            "barAlignmentOffset": job.barAlignmentOffset ?? 0,
+            "chartStartTime":     chartStartTime ?? 0.0,
+            "chartStartSource":   chartStartTime == nil ? "auto" : "manual",
+            "chartStartBarMode":  "renumberFromOne",
+            "includePreIntro":    includePreIntro,
+            "preIntroLabel":      "Pre-intro",
+        ]
+        guard let configData = try? JSONSerialization.data(withJSONObject: configPayload, options: .prettyPrinted) else { return }
+        try? configData.write(to: URL(fileURLWithPath: configPath))
+        job.chartConfigPath = configPath
+        job.chartStartTime  = chartStartTime
+        job.includePreIntro = includePreIntro
+
+        let performerPath = folder.appendingPathComponent("chord.chart.performer.json").path
+        let (performerPayload, _, performerPreview) = Self.generatePerformerChart(
+            simpleData: simpleData,
+            configData: configData,
+            simplePath: simplePath,
+            configPath: configPath
+        )
+        if !performerPayload.isEmpty,
+           let performerData = try? JSONSerialization.data(withJSONObject: performerPayload, options: .prettyPrinted) {
+            try? performerData.write(to: URL(fileURLWithPath: performerPath))
+            job.chordChartPerformerPath = performerPath
+            job.performerChartPreview   = performerPreview
+        }
+        job.chartsVersion = (job.chartsVersion ?? 0) + 1
+        persist(job)
+        let tStr = chartStartTime.map { String(format: "%.3f", $0) } ?? "0.000"
+        log("Performer chart updated (chartStartTime=\(tStr)s, includePreIntro=\(includePreIntro)).\n")
+    }
+
     // MARK: - Private helpers
 
     private func persist(_ job: AnalysisJob) {
@@ -151,6 +633,619 @@ final class JobManager: ObservableObject {
     private func log(_ text: String) {
         logOutput += text
         if let folder = jobFolder { LocalFileStore.appendLog(text, to: folder) }
+    }
+
+    // MARK: - Audio health parsing
+
+    private struct SilenceRegion {
+        var start: Double
+        var end: Double
+        var duration: Double
+    }
+
+    /// Parses `mean_volume` and `max_volume` from ffmpeg volumedetect stderr.
+    nonisolated private static func parseVolumeDetect(_ output: String) -> (mean: Double?, max: Double?) {
+        var mean: Double? = nil
+        var max: Double?  = nil
+        for line in output.components(separatedBy: "\n") {
+            if let r = line.range(of: "mean_volume: ") {
+                let rest = String(line[r.upperBound...])
+                mean = Double(rest.components(separatedBy: " ").first ?? "")
+            }
+            if let r = line.range(of: "max_volume: ") {
+                let rest = String(line[r.upperBound...])
+                max = Double(rest.components(separatedBy: " ").first ?? "")
+            }
+        }
+        return (mean, max)
+    }
+
+    /// Parses silence_start / silence_end / silence_duration lines from ffmpeg silencedetect stderr.
+    nonisolated private static func parseSilenceDetect(_ output: String) -> [SilenceRegion] {
+        var regions: [SilenceRegion] = []
+        var pendingStart: Double? = nil
+        for line in output.components(separatedBy: "\n") {
+            if let r = line.range(of: "silence_start: ") {
+                let rest = String(line[r.upperBound...])
+                pendingStart = Double(rest.trimmingCharacters(in: .whitespacesAndNewlines))
+            } else if line.contains("silence_end:"), let r = line.range(of: "silence_end: ") {
+                let endAndRest = String(line[r.upperBound...])
+                let parts = endAndRest.components(separatedBy: " | silence_duration: ")
+                guard let endVal = Double(parts[0].trimmingCharacters(in: .whitespacesAndNewlines)),
+                      let durStr = parts.count > 1 ? parts[1].trimmingCharacters(in: .whitespacesAndNewlines) : nil,
+                      let durVal = Double(durStr) else { continue }
+                let start = pendingStart ?? (endVal - durVal)
+                regions.append(SilenceRegion(start: start, end: endVal, duration: durVal))
+                pendingStart = nil
+            }
+        }
+        return regions
+    }
+
+    // MARK: - Section candidate detection
+
+    nonisolated private static func detectSectionCandidates(
+        simpleData: Data,
+        simplePath: String
+    ) -> (payload: [String: Any], candidateCount: Int, preview: [SectionCandidate]) {
+        guard let json = try? JSONSerialization.jsonObject(with: simpleData) as? [String: Any],
+              let rawBars = json["bars"] as? [[String: Any]] else {
+            return ([:], 0, [])
+        }
+
+        let bpmDouble: Double? = (json["bpm"] as? NSNumber).map { $0.doubleValue }
+        let timeSignature = json["timeSignature"] as? String ?? "4/4"
+        let totalBarCount = rawBars.count
+        var warnings: [String] = []
+
+        // Build ordered chord list from bars (bar numbers are 1-based in data)
+        let chords: [String] = rawBars.compactMap { $0["chord"] as? String }
+        guard chords.count == totalBarCount, totalBarCount >= 4 else {
+            warnings.append("Not enough bars for section detection (need ≥ 4, got \(totalBarCount)).")
+            let payload: [String: Any] = [
+                "source":        ["chordChartSimplePath": simplePath],
+                "bpm":           bpmDouble.map { jsonDecimal($0, 2) as NSObject } ?? NSNull(),
+                "timeSignature": timeSignature,
+                "barCount":      totalBarCount,
+                "candidates":    [[String: Any]](),
+                "warnings":      warnings,
+            ]
+            return (payload, 0, [])
+        }
+
+        // Collect windows of 4 and 8 bars, keyed by chord sequence
+        // sequenceFirstSeen: maps sequence key -> (first start bar index, window size)
+        // occurrences: maps sequence key -> count
+        struct Occurrence {
+            let firstBarIndex: Int   // 0-based index into chords[]
+            let windowSize: Int
+            var count: Int
+        }
+
+        var occurrenceMap: [String: Occurrence] = [:]
+        var insertionOrder: [String] = []
+
+        for windowSize in [4, 8] {
+            guard totalBarCount >= windowSize else { continue }
+            for startIndex in 0...(totalBarCount - windowSize) {
+                let slice = Array(chords[startIndex..<(startIndex + windowSize)])
+                let key = "\(windowSize):\(slice.joined(separator: ","))"
+                if var existing = occurrenceMap[key] {
+                    existing.count += 1
+                    occurrenceMap[key] = existing
+                } else {
+                    occurrenceMap[key] = Occurrence(firstBarIndex: startIndex, windowSize: windowSize, count: 1)
+                    insertionOrder.append(key)
+                }
+            }
+        }
+
+        // Keep only sequences that appear more than once
+        let repeatedKeys = insertionOrder.filter { occurrenceMap[$0]!.count > 1 }
+
+        // Assign labels A, B, C, … by first appearance order
+        let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        var labelIndex = 0
+        var candidates: [SectionCandidate] = []
+        var candidatesJSON: [[String: Any]] = []
+
+        for key in repeatedKeys {
+            guard let occ = occurrenceMap[key] else { continue }
+            guard labelIndex < alphabet.count else { break }
+            let label = String(alphabet[alphabet.index(alphabet.startIndex, offsetBy: labelIndex)])
+            labelIndex += 1
+
+            let sliceChords = Array(chords[occ.firstBarIndex..<(occ.firstBarIndex + occ.windowSize)])
+            let startBar = (rawBars[occ.firstBarIndex]["bar"] as? Int) ?? (occ.firstBarIndex + 1)
+            let endBarIndex = occ.firstBarIndex + occ.windowSize - 1
+            let endBar   = (rawBars[endBarIndex]["bar"] as? Int) ?? (occ.firstBarIndex + occ.windowSize)
+
+            let candidate = SectionCandidate(
+                label:      label,
+                startBar:   startBar,
+                endBar:     endBar,
+                barCount:   occ.windowSize,
+                chords:     sliceChords,
+                matchCount: occ.count
+            )
+            candidates.append(candidate)
+
+            candidatesJSON.append([
+                "label":      label,
+                "startBar":   startBar,
+                "endBar":     endBar,
+                "barCount":   occ.windowSize,
+                "chords":     sliceChords,
+                "matchCount": occ.count,
+            ])
+        }
+
+        let payload: [String: Any] = [
+            "source":        ["chordChartSimplePath": simplePath],
+            "bpm":           bpmDouble.map { jsonDecimal($0, 2) as NSObject } ?? NSNull(),
+            "timeSignature": timeSignature,
+            "barCount":      totalBarCount,
+            "candidates":    candidatesJSON,
+            "warnings":      warnings,
+        ]
+
+        let preview = Array(candidates.prefix(5))
+        return (payload, candidates.count, preview)
+    }
+
+    // MARK: - Simple chord chart generation
+
+    nonisolated private static func generateSimpleChart(
+        draftData: Data,
+        draftPath: String
+    ) -> (payload: [String: Any], barCount: Int, preview: [ChordChartSimpleBarEntry]) {
+        guard let json = try? JSONSerialization.jsonObject(with: draftData) as? [String: Any],
+              let rawBars = json["bars"] as? [[String: Any]] else {
+            return ([:], 0, [])
+        }
+
+        let bpmDouble: Double? = (json["bpm"] as? NSNumber).map { $0.doubleValue }
+        let timeSignature = json["timeSignature"] as? String ?? "4/4"
+        var warnings: [String] = []
+        var simpleBars: [[String: Any]] = []
+        var preview: [ChordChartSimpleBarEntry] = []
+
+        for bar in rawBars {
+            guard let barNum   = bar["bar"]   as? Int,
+                  let barStart = bar["start"] as? Double,
+                  let barEnd   = bar["end"]   as? Double else { continue }
+
+            let chord = (bar["primaryChord"] as? String) ?? "N.C."
+
+            simpleBars.append([
+                "bar":   barNum,
+                "start": jsonDecimal(barStart, 3),
+                "end":   jsonDecimal(barEnd, 3),
+                "chord": chord,
+            ])
+
+            if preview.count < 16 {
+                preview.append(ChordChartSimpleBarEntry(
+                    bar:   barNum,
+                    start: round3(barStart),
+                    end:   round3(barEnd),
+                    chord: chord
+                ))
+            }
+        }
+
+        if simpleBars.isEmpty {
+            warnings.append("No bars produced from draft chart.")
+        }
+
+        let payload: [String: Any] = [
+            "source":        ["chordChartDraftPath": draftPath],
+            "bpm":           bpmDouble.map { jsonDecimal($0, 2) as NSObject } ?? NSNull(),
+            "timeSignature": timeSignature,
+            "barCount":      simpleBars.count,
+            "bars":          simpleBars,
+            "warnings":      warnings,
+        ]
+        return (payload, simpleBars.count, preview)
+    }
+
+    // MARK: - Performer chart generation
+
+    nonisolated private static func generatePerformerChart(
+        simpleData: Data,
+        configData: Data,
+        simplePath: String,
+        configPath: String
+    ) -> (payload: [String: Any], barCount: Int, preview: [PerformerChartBarEntry]) {
+        guard let simpleJson = try? JSONSerialization.jsonObject(with: simpleData) as? [String: Any],
+              let configJson = try? JSONSerialization.jsonObject(with: configData) as? [String: Any],
+              let rawBars    = simpleJson["bars"] as? [[String: Any]] else {
+            return ([:], 0, [])
+        }
+
+        let bpmDouble: Double?     = (simpleJson["bpm"] as? NSNumber).map { $0.doubleValue }
+        let timeSignature           = simpleJson["timeSignature"] as? String ?? "4/4"
+        let chartStartTime: Double  = (configJson["chartStartTime"] as? NSNumber).map { $0.doubleValue } ?? 0.0
+        let includePreIntro         = configJson["includePreIntro"] as? Bool ?? false
+        let barMode                 = configJson["chartStartBarMode"] as? String ?? "renumberFromOne"
+
+        var preIntroJson: [[String: Any]]        = []
+        var mainJson:     [[String: Any]]        = []
+        var preview:      [PerformerChartBarEntry] = []
+        var mainCounter   = 0
+
+        for bar in rawBars {
+            guard let sourceBar = bar["bar"]   as? Int,
+                  let barStart  = (bar["start"] as? NSNumber).map({ $0.doubleValue }),
+                  let barEnd    = (bar["end"]   as? NSNumber).map({ $0.doubleValue }),
+                  let chord     = bar["chord"]  as? String else { continue }
+
+            if barStart < chartStartTime && !includePreIntro {
+                preIntroJson.append([
+                    "sourceBar": sourceBar,
+                    "start":     jsonDecimal(barStart, 3),
+                    "end":       jsonDecimal(barEnd,   3),
+                    "chord":     chord,
+                ])
+            } else {
+                mainCounter += 1
+                let displayBar = barMode == "renumberFromOne" ? mainCounter : sourceBar
+                mainJson.append([
+                    "bar":       displayBar,
+                    "sourceBar": sourceBar,
+                    "start":     jsonDecimal(barStart, 3),
+                    "end":       jsonDecimal(barEnd,   3),
+                    "chord":     chord,
+                ])
+                if preview.count < 16 {
+                    preview.append(PerformerChartBarEntry(
+                        bar: displayBar, sourceBar: sourceBar,
+                        start: round3(barStart), end: round3(barEnd), chord: chord
+                    ))
+                }
+            }
+        }
+
+        let bpmJson: Any = bpmDouble.map { jsonDecimal($0, 2) as NSObject } ?? NSNull()
+        let payload: [String: Any] = [
+            "source": [
+                "chordChartSimplePath": simplePath,
+                "chartConfigPath":      configPath,
+            ] as [String: Any],
+            "bpm":            bpmJson,
+            "timeSignature":  timeSignature,
+            "chartStartTime": jsonDecimal(chartStartTime, 3),
+            "includePreIntro": includePreIntro,
+            "preIntro":        preIntroJson,
+            "bars":            mainJson,
+            "warnings":        [String](),
+        ]
+        return (payload, mainJson.count, preview)
+    }
+
+    // MARK: - Chord chart draft generation
+
+    nonisolated private static func generateChordChart(
+        beatGridData: Data,
+        chordCleanedData: Data,
+        beatGridPath: String,
+        chordCleanedPath: String
+    ) -> (payload: [String: Any], barCount: Int, previewBars: [ChordChartBarEntry]) {
+        guard let gridJson  = try? JSONSerialization.jsonObject(with: beatGridData)     as? [String: Any],
+              let chordJson = try? JSONSerialization.jsonObject(with: chordCleanedData) as? [String: Any] else {
+            return ([:], 0, [])
+        }
+
+        let rawBars       = gridJson["bars"]   as? [[String: Any]] ?? []
+        let rawChords     = chordJson["chords"] as? [[String: Any]] ?? []
+        let bpmDouble: Double? = (gridJson["bpm"] as? NSNumber).map { $0.doubleValue }
+        let timeSignature = gridJson["estimatedTimeSignature"] as? String ?? "4/4"
+
+        var warnings:   [String]               = []
+        var chartBars:  [[String: Any]]        = []
+        var previewBars: [ChordChartBarEntry]  = []
+
+        for bar in rawBars {
+            guard let barStart = bar["start"] as? Double,
+                  let barEnd   = bar["end"]   as? Double,
+                  let barNum   = bar["bar"]   as? Int else { continue }
+
+            var overlapping:   [[String: Any]]          = []
+            var previewChords: [ChordChartChordEntry]   = []
+            var primaryChord: String? = nil
+            var maxOverlap   = 0.0
+
+            for chord in rawChords {
+                guard let chordStart   = chord["start"]        as? Double,
+                      let chordEnd     = chord["end"]          as? Double,
+                      let displayChord = chord["displayChord"] as? String else { continue }
+
+                let overlapSecs = min(barEnd, chordEnd) - max(barStart, chordStart)
+                guard overlapSecs > 0 else { continue }
+
+                overlapping.append([
+                    "displayChord":   displayChord,
+                    "start":          jsonDecimal(chordStart, 3),
+                    "end":            jsonDecimal(chordEnd, 3),
+                    "overlapSeconds": jsonDecimal(overlapSecs, 3),
+                ])
+                previewChords.append(ChordChartChordEntry(
+                    displayChord:   displayChord,
+                    start:          round3(chordStart),
+                    end:            round3(chordEnd),
+                    overlapSeconds: round3(overlapSecs)
+                ))
+
+                if overlapSecs > maxOverlap {
+                    maxOverlap   = overlapSecs
+                    primaryChord = displayChord
+                }
+            }
+
+            if primaryChord == nil {
+                warnings.append("Bar \(barNum) has no chord overlap")
+            }
+
+            let primaryChordValue: Any = primaryChord.map { $0 as Any } ?? NSNull()
+            chartBars.append([
+                "bar":          barNum,
+                "start":        jsonDecimal(barStart, 3),
+                "end":          jsonDecimal(barEnd, 3),
+                "chords":       overlapping,
+                "primaryChord": primaryChordValue,
+            ])
+
+            if previewBars.count < 8 {
+                previewBars.append(ChordChartBarEntry(
+                    bar:          barNum,
+                    start:        round3(barStart),
+                    end:          round3(barEnd),
+                    primaryChord: primaryChord,
+                    chords:       previewChords
+                ))
+            }
+        }
+
+        let payload: [String: Any] = [
+            "source": [
+                "beatGridPath":     beatGridPath,
+                "chordCleanedPath": chordCleanedPath,
+            ],
+            "bpm":           bpmDouble.map { jsonDecimal($0, 2) as NSObject } ?? NSNull(),
+            "timeSignature": timeSignature,
+            "barCount":      chartBars.count,
+            "bars":          chartBars,
+            "warnings":      warnings,
+        ]
+        return (payload, chartBars.count, previewBars)
+    }
+
+    // MARK: - ffprobe output parsing
+
+    private struct FFprobeResult {
+        var duration: Double?
+        var sampleRate: Int?
+        var channels: Int?
+        var codecName: String?
+        var bitRate: Int?
+        var fileSizeBytes: Int64?
+    }
+
+    nonisolated private static func parseFFprobeOutput(_ data: Data) throws -> FFprobeResult {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw JobError.metadataFailed("Could not parse ffprobe JSON")
+        }
+        var result = FFprobeResult()
+
+        // First audio stream
+        if let streams = root["streams"] as? [[String: Any]],
+           let audioStream = streams.first(where: { ($0["codec_type"] as? String) == "audio" }) {
+            result.codecName  = audioStream["codec_name"] as? String
+            result.channels   = audioStream["channels"] as? Int
+            if let srStr = audioStream["sample_rate"] as? String { result.sampleRate = Int(srStr) }
+            if let brStr = audioStream["bit_rate"] as? String    { result.bitRate    = Int(brStr) }
+        }
+
+        // Format block
+        if let format = root["format"] as? [String: Any] {
+            if let durStr  = format["duration"]  as? String { result.duration      = Double(durStr) }
+            if let sizeStr = format["size"]       as? String { result.fileSizeBytes = Int64(sizeStr) }
+            // Fall back to format bit_rate if stream didn't provide one
+            if result.bitRate == nil, let brStr = format["bit_rate"] as? String { result.bitRate = Int(brStr) }
+        }
+
+        return result
+    }
+
+    // MARK: - Backend helpers
+
+    nonisolated private static func checkBackendHealth(baseUrl: String) async -> Bool {
+        guard let url = URL(string: "\(baseUrl)/health") else { return false }
+        do {
+            let (_, response) = try await URLSession.shared.data(from: url)
+            return (response as? HTTPURLResponse)?.statusCode == 200
+        } catch {
+            return false
+        }
+    }
+
+    nonisolated private static func postAudioFile(
+        to urlString: String,
+        fileURL: URL,
+        params: [String: String]
+    ) async throws -> Data {
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+
+        let boundary = UUID().uuidString
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+
+        for (key, value) in params {
+            body.append(Data("--\(boundary)\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".utf8))
+            body.append(Data("\(value)\r\n".utf8))
+        }
+
+        let filename = fileURL.lastPathComponent
+        let fileData = try Data(contentsOf: fileURL)
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".utf8))
+        body.append(Data("Content-Type: audio/wav\r\n\r\n".utf8))
+        body.append(fileData)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+        request.httpBody = body
+        let (data, _) = try await URLSession.shared.data(for: request)
+        return data
+    }
+
+    /// Returns an `NSDecimalNumber` formatted to `places` decimal places.
+    /// Use for all `Double` values in `[String: Any]` dicts written via `JSONSerialization`
+    /// to prevent IEEE 754 artefacts (e.g. 0.86 serialising as 0.85999999999999999).
+    nonisolated private static func jsonDecimal(_ v: Double, _ places: Int) -> NSDecimalNumber {
+        NSDecimalNumber(string: String(format: "%.*f", places, v))
+    }
+
+    /// Rounds a Double to N decimal places for use in Swift `Codable` model values.
+    /// (JSONEncoder uses Ryu/shortest-decimal and does not need NSDecimalNumber.)
+    nonisolated private static func round3(_ v: Double) -> Double {
+        Double(String(format: "%.3f", v)) ?? v
+    }
+
+    nonisolated private static func parseBeatResponse(_ data: Data) -> (bpm: Double?, beatCount: Int?, resolvedModel: String?) {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return (nil, nil, nil)
+        }
+        let bpm: Double?
+        if let v = json["bpm"] as? Double      { bpm = v }
+        else if let v = json["bpm"] as? Int    { bpm = Double(v) }
+        else                                    { bpm = nil }
+
+        let beatCount: Int?
+        if let v = json["beatCount"] as? Int          { beatCount = v }
+        else if let beats = json["beats"] as? [Any]   { beatCount = beats.count }
+        else                                           { beatCount = nil }
+
+        let resolvedModel = json["model"] as? String
+
+        return (bpm, beatCount, resolvedModel)
+    }
+
+    /// Generates a 4/4 beat grid from beat.detection.json data.
+    /// Returns (gridPayload, barCount) — gridPayload is empty on parse failure.
+    nonisolated private static func generateBeatGrid(
+        from beatData: Data,
+        bpm: Double?,
+        barAlignmentOffset: Int = 0
+    ) -> (payload: [String: Any], barCount: Int) {
+        guard let json = try? JSONSerialization.jsonObject(with: beatData) as? [String: Any],
+              let rawBeats = json["beats"] as? [[String: Any]] else {
+            return ([:], 0)
+        }
+
+        let allBeatTimes = rawBeats.compactMap { $0["time"] as? Double }
+        let beatsPerBar  = 4
+        let offset       = max(0, min(3, barAlignmentOffset))
+        var warnings: [String] = []
+
+        if allBeatTimes.count < beatsPerBar {
+            warnings.append("Not enough beats for a complete bar.")
+        }
+
+        // Pickup beats are those before the first full bar
+        let pickupTimes = offset > 0 ? Array(allBeatTimes.prefix(offset)) : []
+        let barBeatTimes = Array(allBeatTimes.dropFirst(offset))
+
+        let pickupBeats: [[String: Any]] = pickupTimes.enumerated().map { idx, t in
+            ["beat": idx + 1, "time": jsonDecimal(t, 3)]
+        }
+
+        var bars: [[String: Any]] = []
+        var i = 0
+        while i < barBeatTimes.count {
+            let slice    = barBeatTimes[i ..< min(i + beatsPerBar, barBeatTimes.count)]
+            let barBeats = Array(slice)
+            let barStartRaw = barBeats[0]
+            let nextBarStartRaw: Double? = (i + beatsPerBar < barBeatTimes.count)
+                ? barBeatTimes[i + beatsPerBar]
+                : nil
+            let beatEntries: [[String: Any]] = barBeats.enumerated().map { idx, t in
+                ["beat": idx + 1, "time": jsonDecimal(t, 3)]
+            }
+            let barEndRaw: Double = nextBarStartRaw ?? (barBeats.last ?? barStartRaw)
+            bars.append([
+                "bar":   i / beatsPerBar + 1,
+                "start": jsonDecimal(barStartRaw, 3),
+                "end":   jsonDecimal(barEndRaw, 3),
+                "beats": beatEntries,
+            ])
+            i += beatsPerBar
+        }
+
+        let bpmJson: Any = bpm.map { jsonDecimal($0, 2) as NSObject } ?? NSNull()
+        let payload: [String: Any] = [
+            "bpm":                    bpmJson,
+            "beatCount":              allBeatTimes.count,
+            "estimatedTimeSignature": "4/4",
+            "beatsPerBar":            beatsPerBar,
+            "barAlignmentOffset":     offset,
+            "pickupBeats":            pickupBeats,
+            "bars":                   bars,
+            "warnings":               warnings,
+        ]
+        return (payload, bars.count)
+    }
+
+    nonisolated private static func parseChordResponse(
+        _ data: Data
+    ) -> (chordCount: Int?, previewChords: [CleanedChord]?, cleanedData: Data?) {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return (nil, nil, nil)
+        }
+
+        // Prefer values from the normalised cleanedChords payload
+        guard let cleaned = json["cleanedChords"] as? [String: Any] else {
+            // Fallback for older / stub responses
+            let count: Int?
+            if let v = json["chordCount"] as? Int       { count = v }
+            else if let ch = json["chords"] as? [Any]   { count = ch.count }
+            else                                         { count = nil }
+            return (count, nil, nil)
+        }
+
+        let chordCount = cleaned["chordCount"] as? Int
+
+        // Parse first 10 chords for the UI preview
+        let rawList = (cleaned["chords"] as? [[String: Any]]) ?? []
+        let previewChords: [CleanedChord] = rawList.prefix(10).compactMap { entry in
+            guard let start = entry["start"] as? Double,
+                  let end   = entry["end"]   as? Double,
+                  let raw   = entry["rawChord"]     as? String,
+                  let disp  = entry["displayChord"] as? String else { return nil }
+            return CleanedChord(start: round3(start), end: round3(end), rawChord: raw, displayChord: disp)
+        }
+
+        // Serialise the cleaned dict for writing to chord.cleaned.json,
+        // rounding start/end to 3dp to eliminate floating-point artefacts.
+        var mutableCleaned = cleaned
+        if var chords = mutableCleaned["chords"] as? [[String: Any]] {
+            chords = chords.map { chord in
+                var c = chord
+                if let s = c["start"] as? Double { c["start"] = jsonDecimal(s, 3) }
+                if let e = c["end"]   as? Double { c["end"]   = jsonDecimal(e, 3) }
+                return c
+            }
+            mutableCleaned["chords"] = chords
+        }
+        let cleanedData = try? JSONSerialization.data(
+            withJSONObject: mutableCleaned,
+            options: .prettyPrinted
+        )
+
+        return (chordCount, previewChords.isEmpty ? nil : previewChords, cleanedData)
     }
 
     // MARK: - URL cleanup

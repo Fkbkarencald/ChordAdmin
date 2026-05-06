@@ -10,6 +10,61 @@ struct LocalFileStore {
         return appSupport.appendingPathComponent("ChordAdmin/jobs", isDirectory: true)
     }()
 
+    private static let urlCacheFile: URL = {
+        let appSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first!
+        return appSupport.appendingPathComponent("ChordAdmin/url_cache.json")
+    }()
+
+    // MARK: - URL cache
+
+    /// Returns the job folder URL for `url` if the folder contains a completed job,
+    /// or `nil` if there is no valid cache entry.
+    static func cachedJobFolder(for url: String) -> URL? {
+        guard let map = readURLCache(), let folderPath = map[url] else { return nil }
+        let folder = URL(fileURLWithPath: folderPath)
+        let required = ["analysis.wav", "job.json"]
+        for name in required {
+            guard FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path) else {
+                return nil
+            }
+        }
+        return folder
+    }
+
+    /// Persists a `url → folderPath` mapping in the URL cache.
+    static func saveURLCache(url: String, folderPath: String) {
+        var map = readURLCache() ?? [:]
+        map[url] = folderPath
+        writeURLCache(map)
+    }
+
+    /// Removes a stale cache entry for `url`.
+    static func evictURLCache(url: String) {
+        guard var map = readURLCache() else { return }
+        map.removeValue(forKey: url)
+        writeURLCache(map)
+    }
+
+    private static func readURLCache() -> [String: String]? {
+        guard let data = try? Data(contentsOf: urlCacheFile),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: String] else {
+            return nil
+        }
+        return obj
+    }
+
+    private static func writeURLCache(_ map: [String: String]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: map, options: .prettyPrinted) else { return }
+        try? FileManager.default.createDirectory(
+            at: urlCacheFile.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try? data.write(to: urlCacheFile)
+    }
+
     static func createJobFolder(jobId: String) throws -> URL {
         let folder = baseDirectory.appendingPathComponent(jobId, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
