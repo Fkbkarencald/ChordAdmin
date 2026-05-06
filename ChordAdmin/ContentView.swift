@@ -667,7 +667,7 @@ private struct SectionCandidatesPreviewPanel: View {
                         Text("Bars \(c.startBar)\u{2013}\(c.endBar)  (\(c.barCount) bars, \(c.matchCount)\u{00d7})")
                             .font(.system(.caption, design: .monospaced))
                             .foregroundColor(.secondary)
-                        Text(c.chords.joined(separator: " – "))
+                        Text(c.barSignatures.joined(separator: " – "))
                             .font(.caption.weight(.medium))
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -825,7 +825,7 @@ private struct WaveformView: View {
     let samples: [Float]
     let duration: Double
     let currentTime: Double
-    let bars: [ChordChartSimpleBarEntry]
+    let bars: [ChordChartBarEntry]
     var rawChords: [CleanedChord] = []
     let onSeek: (Double) -> Void
 
@@ -949,7 +949,8 @@ private struct ChordChartModeSwitcher: View {
     let job: AnalysisJob
     @ObservedObject var jobManager: JobManager
     @State private var localOffset: Int = 0
-    @State private var loadedBars: [ChordChartSimpleBarEntry] = []
+    @State private var loadedPerformerBars: [ChordChartBarEntry] = []
+    @StateObject private var sectionStore = SectionStore()
     @State private var loadedDraftBars: [ChordChartBarEntry] = []
     @State private var selectedDraftBar: ChordChartBarEntry? = nil
     @State private var lastLoadedJobId: String = ""
@@ -1034,7 +1035,7 @@ private struct ChordChartModeSwitcher: View {
                                         samples: waveformLoader.samples,
                                         duration: audioPlayer.duration,
                                         currentTime: audioPlayer.currentTime,
-                                        bars: loadedBars.isEmpty ? (job.chordChartSimplePreview ?? []) : loadedBars,
+                                        bars: loadedPerformerBars.isEmpty ? loadedDraftBars : loadedPerformerBars,
                                         rawChords: loadedRawChords,
                                         onSeek: { t in audioPlayer.seek(to: t) }
                                     )
@@ -1077,15 +1078,35 @@ private struct ChordChartModeSwitcher: View {
                     .clipShape(RoundedRectangle(cornerRadius: 4))
                     .disabled(jobManager.isRunning)
                 }
+
+                Divider().frame(height: 16)
+
+                let isHalved = job.tempoHalved == true
+                Button(isHalved ? "½ BPM ✓" : "½ BPM") {
+                    guard !jobManager.isRunning else { return }
+                    Task { await jobManager.halveTempo(!isHalved) }
+                }
+                .buttonStyle(.bordered)
+                .font(.caption2)
+                .foregroundColor(isHalved ? .accentColor : .primary)
+                .background(isHalved ? Color.accentColor.opacity(0.12) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .help(isHalved ? "Restore full tempo" : "Halve detected tempo (use when BPM is double the true value)")
+                .disabled(jobManager.isRunning)
+
                 Spacer()
             }
 
             ChordProgressionView(
-                bars: loadedDraftBars,
-                fallbackBars: loadedBars.isEmpty ? (job.chordChartSimplePreview ?? []) : loadedBars,
-                totalBarCount: job.chordChartSimpleBarCount,
+                bars: loadedPerformerBars,
+                fallbackBars: loadedDraftBars,
+                totalBarCount: job.chordChartBarCount,
                 selectedBar: $selectedDraftBar,
-                activeBar: loadedDraftBars.isEmpty ? nil : loadedDraftBars.last(where: { $0.start <= audioPlayer.currentTime }),
+                sectionStore: sectionStore,
+                activeBar: {
+                    let bars = loadedPerformerBars.isEmpty ? loadedDraftBars : loadedPerformerBars
+                    return bars.last(where: { $0.start <= audioPlayer.currentTime })
+                }(),
                 onSeek: { bar, seekTime in
                     audioPlayer.seek(to: seekTime)
                     selectedDraftBar = bar
@@ -1098,7 +1119,7 @@ private struct ChordChartModeSwitcher: View {
             if isNewJob {
                 audioPlayer.stop()
                 waveformLoader.reset()
-                loadedBars = []
+                loadedPerformerBars = []
                 loadedDraftBars = []
                 loadedRawChords = []
                 localOffset = job.barAlignmentOffset ?? 0
@@ -1107,20 +1128,29 @@ private struct ChordChartModeSwitcher: View {
                 lastLoadedJobId = job.id
             }
 
-            // Load simple chart
-            if let path = job.chordChartSimplePath,
+            // Load performer chart (primary display bars for waveform)
+            if let path = job.chordChartPerformerPath,
                let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let rawBars = json["bars"] as? [[String: Any]] {
-                var bars: [ChordChartSimpleBarEntry] = []
+                var bars: [ChordChartBarEntry] = []
                 for bar in rawBars {
                     guard let barNum = bar["bar"] as? Int,
                           let start  = (bar["start"] as? NSNumber).map({ $0.doubleValue }),
-                          let end    = (bar["end"]   as? NSNumber).map({ $0.doubleValue }),
-                          let chord  = bar["chord"] as? String else { continue }
-                    bars.append(ChordChartSimpleBarEntry(bar: barNum, start: start, end: end, chord: chord))
+                          let end    = (bar["end"]   as? NSNumber).map({ $0.doubleValue }) else { continue }
+                    let primary = bar["primaryChord"] as? String
+                    let rawChords = bar["chords"] as? [[String: Any]] ?? []
+                    var chordEntries: [ChordChartChordEntry] = []
+                    for c in rawChords {
+                        guard let dc   = c["displayChord"] as? String,
+                              let cs   = (c["start"] as? NSNumber).map({ $0.doubleValue }),
+                              let ce   = (c["end"]   as? NSNumber).map({ $0.doubleValue }),
+                              let ovlp = (c["overlapSeconds"] as? NSNumber).map({ $0.doubleValue }) else { continue }
+                        chordEntries.append(ChordChartChordEntry(displayChord: dc, start: cs, end: ce, overlapSeconds: ovlp))
+                    }
+                    bars.append(ChordChartBarEntry(bar: barNum, start: start, end: end, primaryChord: primary, chords: chordEntries))
                 }
-                loadedBars = bars
+                loadedPerformerBars = bars
             }
 
             // Load draft chart
@@ -1162,6 +1192,11 @@ private struct ChordChartModeSwitcher: View {
                 }
             }
 
+            // Load / refresh sections (after draft bars are ready)
+            if let folder = jobManager.jobFolder, isNewJob || sectionStore.sections.isEmpty {
+                sectionStore.load(for: job, jobFolder: folder)
+            }
+
             if let ap = audioPath {
                 if isNewJob { audioPlayer.load(path: ap) }
                 await waveformLoader.load(path: ap)
@@ -1178,27 +1213,29 @@ private struct ChordChartModeSwitcher: View {
 
 private struct ChordProgressionView: View {
     let bars: [ChordChartBarEntry]
-    var fallbackBars: [ChordChartSimpleBarEntry] = []
+    var fallbackBars: [ChordChartBarEntry] = []
+
     let totalBarCount: Int?
     @Binding var selectedBar: ChordChartBarEntry?
+    @ObservedObject var sectionStore: SectionStore
     var activeBar: ChordChartBarEntry? = nil
     var onSeek: ((ChordChartBarEntry, Double) -> Void)? = nil
 
     @State private var barSubdivisions: [Int: Int] = [:]
+    @State private var renamingSection: ChordSection? = nil
+    @State private var renameText: String = ""
+    @State private var keyMonitor: Any? = nil
 
     private func subdivision(for barNum: Int) -> Int { barSubdivisions[barNum] ?? 4 }
 
     private var effectiveBars: [ChordChartBarEntry] {
         if !bars.isEmpty { return bars }
-        return fallbackBars.map {
-            ChordChartBarEntry(bar: $0.bar, start: $0.start, end: $0.end,
-                               primaryChord: $0.chord, chords: [])
-        }
+        return fallbackBars
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Fixed subdivide toolbar
+            // Fixed subdivide + reset toolbar
             HStack(spacing: 6) {
                 Text("Subdivide")
                     .font(.system(size: 11, weight: .semibold))
@@ -1216,110 +1253,73 @@ private struct ChordProgressionView: View {
                 .frame(width: 160)
                 .disabled(selectedBar == nil)
                 Spacer()
+                if sectionStore.sections.count > 1 {
+                    Button("Reset sections") {
+                        sectionStore.resetToSingle()
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                }
             }
             .padding(.horizontal, 8)
             .padding(.top, 4)
 
         ScrollViewReader { proxy in
             ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
                 let display = effectiveBars
                 if display.isEmpty {
                     Text("No chord chart available.")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .padding(8)
+                } else if sectionStore.sections.isEmpty {
+                    // Fallback flat layout while sections are loading
+                    barGrid(bars: display)
+                        .padding(8)
                 } else {
-                    HStack {
-                        let label = totalBarCount.map { "\(display.count) of \($0) bars" } ?? "\(display.count) bars"
-                        Text(label)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-
-                    ForEach(Array(stride(from: 0, to: display.count, by: 4)), id: \.self) { rowStart in
-                        let rowEnd  = min(rowStart + 4, display.count)
-                        let rowBars = Array(display[rowStart..<rowEnd])
-                        HStack(spacing: 6) {
-                            ForEach(rowBars, id: \.bar) { bar in
-                                let isThisBarSelected = selectedBar?.bar == bar.bar
-                                ProgressionBarCell(
-                                    bar: bar,
-                                    isSelected: isThisBarSelected,
-                                    isActive: activeBar?.bar == bar.bar,
-                                    subdivisions: subdivision(for: bar.bar),
-                                    onTap: { seekTime in
-                                        if isThisBarSelected {
-                                            selectedBar = nil
-                                        } else {
-                                            selectedBar = bar
-                                            onSeek?(bar, seekTime)
-                                        }
+                    // Sectioned layout
+                    let barByNum = Dictionary(uniqueKeysWithValues: display.map { ($0.bar, $0) })
+                    ForEach(sectionStore.sections) { section in
+                        let sectionBars = section.bars.compactMap { barByNum[$0] }
+                        VStack(alignment: .leading, spacing: 6) {
+                            // Section header
+                            SectionHeaderView(
+                                section: section,
+                                isRenaming: renamingSection?.id == section.id,
+                                renameText: $renameText,
+                                onCommitRename: {
+                                    let trimmed = renameText.trimmingCharacters(in: .whitespaces)
+                                    if !trimmed.isEmpty {
+                                        sectionStore.rename(section: section.id, to: trimmed)
                                     }
-                                )
-                                .id(bar.bar)
-                            }
-                            if rowBars.count < 4 {
-                                ForEach(0..<(4 - rowBars.count), id: \.self) { _ in
-                                    Color.clear.frame(maxWidth: .infinity)
-                                }
-                            }
+                                    renamingSection = nil
+                                },
+                                onCancelRename: { renamingSection = nil }
+                            )
+                            barGrid(bars: sectionBars)
                         }
+                        .padding(.horizontal, 8)
+                        .padding(.top, 10)
+                        .padding(.bottom, 4)
+
+                        Divider().padding(.horizontal, 8)
                     }
 
+                    // Selected bar detail + section controls
                     if let sel = selectedBar {
-                        let selSub = subdivision(for: sel.bar)
-                        let barDuration = max(0.001, sel.end - sel.start)
-                        let minOverlapForSub = max(0.05, barDuration / Double(selSub) * 0.5)
-                        VStack(alignment: .leading, spacing: 8) {
-                            // Bar info
-                            HStack(spacing: 10) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Bar \(sel.bar)").fontWeight(.semibold)
-                                    Text(String(format: "%.3f – %.3f s", sel.start, sel.end))
-                                        .font(.system(.caption2, design: .monospaced))
-                                        .foregroundColor(.secondary)
-                                }
-                                Spacer()
-                            }
-                            // Row 2: chord tokens at current subdivision
-                            let visibleChords = sel.chords
-                                .filter { $0.overlapSeconds >= minOverlapForSub }
-                                .sorted { $0.start < $1.start }
-                            if !visibleChords.isEmpty {
-                                HStack(spacing: 6) {
-                                    ForEach(visibleChords, id: \.start) { c in
-                                        Text("\(c.displayChord) · \(String(format: "%.2fs", c.overlapSeconds))")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color(NSColor.controlBackgroundColor))
-                                            .clipShape(Capsule())
-                                            .overlay(Capsule().stroke(Color.gray.opacity(0.2), lineWidth: 1))
-                                    }
-                                    Spacer()
-                                }
-                            }
-                        }
-                        .font(.caption)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background(Color.accentColor.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.accentColor.opacity(0.2), lineWidth: 1)
-                        )
+                        selectedBarPanel(sel: sel, sectionStore: sectionStore)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
                     }
+
+                    Color.clear.frame(height: 8)
                 }
             }
-            .padding(8)
             .background(Color(NSColor.textBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 4))
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color.gray.opacity(0.2))
-            )
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.2)))
             .onChange(of: activeBar?.bar) {
                 if let n = activeBar?.bar {
                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -1330,6 +1330,212 @@ private struct ChordProgressionView: View {
             } // ScrollView
         } // ScrollViewReader
         } // VStack
+        .onAppear {
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                guard renamingSection == nil else { return event }
+                guard event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
+                    return event
+                }
+                switch event.charactersIgnoringModifiers {
+                case "s":
+                    if let bar = selectedBar { sectionStore.startNewSection(at: bar.bar) }
+                    return nil
+                case "m":
+                    if let bar = selectedBar { sectionStore.mergeSectionWithPrevious(containing: bar.bar) }
+                    return nil
+                case "r":
+                    if let bar = selectedBar {
+                        renamingSection = sectionStore.section(containing: bar.bar)
+                    }
+                    return nil
+                default:
+                    return event
+                }
+            }
+        }
+        .onDisappear {
+            if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
+        }
+        .sheet(item: $renamingSection) { section in
+            RenameSheetView(
+                sectionName: section.name,
+                onSave: { newName in
+                    sectionStore.rename(section: section.id, to: newName)
+                    renamingSection = nil
+                },
+                onCancel: { renamingSection = nil }
+            )
+        }
+    }
+
+    // MARK: - Sub-views
+
+    @ViewBuilder
+    private func barGrid(bars: [ChordChartBarEntry]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(stride(from: 0, to: bars.count, by: 4)), id: \.self) { rowStart in
+                let rowEnd  = min(rowStart + 4, bars.count)
+                let rowBars = Array(bars[rowStart..<rowEnd])
+                HStack(spacing: 6) {
+                    ForEach(rowBars, id: \.bar) { bar in
+                        let isThisBarSelected = selectedBar?.bar == bar.bar
+                        ProgressionBarCell(
+                            bar: bar,
+                            isSelected: isThisBarSelected,
+                            isActive: activeBar?.bar == bar.bar,
+                            subdivisions: subdivision(for: bar.bar),
+                            onTap: { seekTime in
+                                if isThisBarSelected {
+                                    selectedBar = nil
+                                } else {
+                                    selectedBar = bar
+                                    onSeek?(bar, seekTime)
+                                }
+                            }
+                        )
+                        .id(bar.bar)
+                    }
+                    if rowBars.count < 4 {
+                        ForEach(0..<(4 - rowBars.count), id: \.self) { _ in
+                            Color.clear.frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func selectedBarPanel(sel: ChordChartBarEntry, sectionStore: SectionStore) -> some View {
+        let selSub = subdivision(for: sel.bar)
+        let barDuration = max(0.001, sel.end - sel.start)
+        let minOverlapForSub = max(0.05, barDuration / Double(selSub) * 0.5)
+        let currentSection = sectionStore.section(containing: sel.bar)
+        let isFirst = currentSection.map { sectionStore.isFirstSection($0) } ?? true
+        let isFirstBar = currentSection?.startBar == sel.bar
+
+        VStack(alignment: .leading, spacing: 8) {
+            // Bar info
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Bar \(sel.bar)").fontWeight(.semibold)
+                    Text(String(format: "%.3f – %.3f s", sel.start, sel.end))
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+            }
+
+            // Chord tokens
+            let visibleChords = sel.chords
+                .filter { $0.overlapSeconds >= minOverlapForSub }
+                .sorted { $0.start < $1.start }
+            if !visibleChords.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(visibleChords, id: \.start) { c in
+                        Text("\(c.displayChord) · \(String(format: "%.2fs", c.overlapSeconds))")
+                            .font(.system(size: 11, weight: .semibold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(Color.gray.opacity(0.2), lineWidth: 1))
+                    }
+                    Spacer()
+                }
+            }
+
+            // Section controls
+            Divider()
+            HStack(spacing: 8) {
+                if !isFirstBar {
+                    Button("Start section here") {
+                        sectionStore.startNewSection(at: sel.bar)
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.caption2)
+                }
+
+                if let sec = currentSection {
+                    Button("Rename section") {
+                        renamingSection = sec
+                        renameText = sec.name
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.caption2)
+                }
+
+                if !isFirst && isFirstBar {
+                    Button("Merge with previous") {
+                        sectionStore.mergeSectionWithPrevious(containing: sel.bar)
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.caption2)
+                }
+
+                Spacer()
+            }
+        }
+        .font(.caption)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.accentColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.accentColor.opacity(0.2), lineWidth: 1))
+    }
+}
+
+private struct SectionHeaderView: View {
+    let section: ChordSection
+    let isRenaming: Bool
+    @Binding var renameText: String
+    let onCommitRename: () -> Void
+    let onCancelRename: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(section.name)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.primary)
+            Text("·")
+                .foregroundColor(.secondary)
+            Text("Bars \(section.startBar)–\(section.endBar)")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+            Spacer()
+        }
+    }
+}
+
+private struct RenameSheetView: View {
+    @State private var text: String
+    let onSave: (String) -> Void
+    let onCancel: () -> Void
+
+    init(sectionName: String, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+        _text = State(initialValue: sectionName)
+        self.onSave   = onSave
+        self.onCancel = onCancel
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Rename Section")
+                .font(.headline)
+            TextField("Section name", text: $text)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 260)
+                .onSubmit { if !text.trimmingCharacters(in: .whitespaces).isEmpty { onSave(text) } }
+            HStack(spacing: 12) {
+                Button("Cancel") { onCancel() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") { onSave(text) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(24)
+        .frame(minWidth: 320)
     }
 }
 
@@ -1533,7 +1739,7 @@ private struct PerformerProgressionView: View {
                                             ForEach(rowBars.indices, id: \.self) { idx in
                                                 ChordCell(
                                                     barNumber: rowBars[idx].sourceBar,
-                                                    chord: rowBars[idx].chord,
+                                                    chord: rowBars[idx].primaryChord ?? "N.C.",
                                                     isSelected: false,
                                                     isActive: false,
                                                     accentColor: .gray,
@@ -1578,7 +1784,7 @@ private struct PerformerProgressionView: View {
                                 let bar = rowBars[idx]
                                 ChordCell(
                                     barNumber: bar.bar,
-                                    chord: bar.chord,
+                                    chord: bar.primaryChord ?? "N.C.",
                                     isSelected: selectedBar?.bar == bar.bar,
                                     isActive: activeBar?.bar == bar.bar,
                                     accentColor: .accentColor,
