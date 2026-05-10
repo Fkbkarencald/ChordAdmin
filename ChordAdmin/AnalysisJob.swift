@@ -229,6 +229,8 @@ struct AnalysisJob: Codable, Identifiable, Sendable {
     var sectionsPath: String?
     var sectionCount: Int?
     var barAlignmentOffset: Int?
+    var beatsPerBarOverride: Int?
+    var manualBpm: Double?
     var tempoHalved: Bool?
     var chartConfigPath: String?
     var chordChartPerformerPath: String?

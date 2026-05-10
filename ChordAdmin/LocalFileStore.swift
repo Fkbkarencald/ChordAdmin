@@ -93,6 +93,31 @@ struct LocalFileStore {
         }
     }
 
+    /// Returns the `sectionCount` from the cached job whose URL shares the same
+    /// YouTube video ID as `url`. Handles format mismatches (youtu.be vs youtube.com).
+    static func cachedSectionCount(for url: String) -> Int? {
+        guard let targetID = youTubeVideoID(from: url), let map = readURLCache() else { return nil }
+        for (cacheUrl, folderPath) in map {
+            guard youTubeVideoID(from: cacheUrl) == targetID else { continue }
+            let folder = URL(fileURLWithPath: folderPath)
+            let required = ["analysis.wav", "job.json"]
+            guard required.allSatisfy({ FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }) else { continue }
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return (try? decoder.decode(AnalysisJob.self, from: (try? Data(contentsOf: folder.appendingPathComponent("job.json"))) ?? Data()))?.sectionCount
+        }
+        return nil
+    }
+
+    private static func youTubeVideoID(from urlString: String) -> String? {
+        guard let url = URL(string: urlString) else { return nil }
+        if url.host?.contains("youtu.be") == true {
+            return url.pathComponents.dropFirst().first
+        }
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        return components?.queryItems?.first(where: { $0.name == "v" })?.value
+    }
+
     static func saveSourceInfo(_ info: [String: String], to folder: URL) throws {
         let data = try JSONSerialization.data(withJSONObject: info, options: .prettyPrinted)
         try data.write(to: folder.appendingPathComponent("source.info.json"))

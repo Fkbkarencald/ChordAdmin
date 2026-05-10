@@ -313,7 +313,7 @@ final class JobManager: ObservableObject {
                     persist(job)
                     log("Generating beat grid…\n")
                     let gridPath = folder.appendingPathComponent("beat.grid.json").path
-                    let (gridPayload, barCount) = Self.generateBeatGrid(from: beatData, bpm: bpm, barAlignmentOffset: 0)
+                    let (gridPayload, barCount) = Self.generateBeatGrid(from: beatData, bpm: bpm, barAlignmentOffset: 0, beatsPerBar: job.beatsPerBarOverride ?? 4)
                     if !gridPayload.isEmpty,
                        let gridData = try? JSONSerialization.data(withJSONObject: gridPayload, options: .prettyPrinted) {
                         try gridData.write(to: URL(fileURLWithPath: gridPath))
@@ -505,12 +505,13 @@ final class JobManager: ObservableObject {
         if job.tempoHalved == true {
             let (thinned, halvedBpm) = Self.applyTempoHalving(to: beatData)
             effectiveBeatData = thinned
-            effectiveBpm = halvedBpm ?? job.bpm.map { $0 / 2 }
+            effectiveBpm = job.manualBpm ?? halvedBpm ?? job.bpm.map { $0 / 2 }
         } else {
             effectiveBeatData = beatData
-            effectiveBpm = job.bpm
+            effectiveBpm = job.manualBpm ?? job.bpm
         }
-        let (gridPayload, barCount) = Self.generateBeatGrid(from: effectiveBeatData, bpm: effectiveBpm, barAlignmentOffset: offset)
+        let beatsPerBar = job.beatsPerBarOverride ?? 4
+        let (gridPayload, barCount) = Self.generateBeatGrid(from: effectiveBeatData, bpm: effectiveBpm, barAlignmentOffset: offset, beatsPerBar: beatsPerBar)
         guard !gridPayload.isEmpty,
               let gridData = try? JSONSerialization.data(withJSONObject: gridPayload, options: .prettyPrinted)
         else { isRunning = false; return }
@@ -589,6 +590,107 @@ final class JobManager: ObservableObject {
         persist(job)
         log(halve ? "Halving tempo — keeping every other beat…\n" : "Restoring full tempo…\n")
         await regenerateCharts(offset: job.barAlignmentOffset ?? 0)
+    }
+
+    // MARK: - Beats per bar override
+
+    /// Changes the beats-per-bar grouping used for chart generation and regenerates all charts.
+    /// Use 3 when madmom detects a 6/8 song as 3/4 (3 detected beats per actual bar).
+    func setBeatsPerBar(_ n: Int) async {
+        guard !isRunning, var job = currentJob else { return }
+        job.beatsPerBarOverride = (n == 4) ? nil : n   // nil == default (4/4)
+        currentJob = job
+        persist(job)
+        log("Beats per bar set to \(n) — regenerating charts…\n")
+        await regenerateCharts(offset: job.barAlignmentOffset ?? 0)
+    }
+
+    /// Overrides the displayed BPM metadata in the beat grid without altering beat timestamps.
+    /// Pass nil to revert to the backend-detected value.
+    func setManualBpm(_ bpm: Double?) async {
+        guard !isRunning, var job = currentJob else { return }
+        job.manualBpm = bpm
+        currentJob = job
+        persist(job)
+        if let b = bpm {
+            log(String(format: "Manual BPM set to %.1f — regenerating charts…\n", b))
+        } else {
+            log("Manual BPM cleared — reverting to detected value…\n")
+        }
+        await regenerateCharts(offset: job.barAlignmentOffset ?? 0)
+    }
+
+    // MARK: - Beat redetection
+
+    /// Re-runs beat detection against the backend using the existing WAV file,
+    /// then regenerates beat grid and all downstream charts.
+    /// - Parameters:
+    ///   - minBpm: Optional lower BPM bound for the DBN search (nil = backend default ~55).
+    ///   - maxBpm: Optional upper BPM bound for the DBN search (nil = backend default ~215).
+    ///   - transitionLambda: DBN tempo stability (nil = default ~100; try 500–2000 for songs
+    ///     with very consistent tempo where madmom keeps wandering).
+    func redetectBeats(minBpm: Double? = nil, maxBpm: Double? = nil, transitionLambda: Double? = nil) async {
+        guard !isRunning,
+              var job = currentJob,
+              let folder = jobFolder,
+              let wavPath = job.analysisWavPath
+        else { return }
+
+        isRunning = true
+        var logMsg = "Re-detecting beats (force=true"
+        if let lo = minBpm, let hi = maxBpm { logMsg += ", bpm=\(Int(lo))–\(Int(hi))" }
+        if let tl = transitionLambda         { logMsg += ", transition_lambda=\(Int(tl))" }
+        log(logMsg + ")…\n")
+
+        let wavURL = URL(fileURLWithPath: wavPath)
+        let beatPath = folder.appendingPathComponent("beat.detection.json").path
+
+        do {
+            job.status = .detectingBeats
+            job.requestedBeatModel = Self.defaultBeatModel
+            persist(job)
+
+            let beatData = try await Self.postAudioFile(
+                to: "\(Self.backendBaseUrl)/api/detect-beats",
+                fileURL: wavURL,
+                params: {
+                    var p: [String: String] = ["model": Self.defaultBeatModel, "force": "true"]
+                    if let v = minBpm           { p["min_bpm"]           = String(format: "%.1f", v) }
+                    if let v = maxBpm           { p["max_bpm"]           = String(format: "%.1f", v) }
+                    if let v = transitionLambda { p["transition_lambda"] = String(format: "%.0f", v) }
+                    return p
+                }()
+            )
+            try beatData.write(to: URL(fileURLWithPath: beatPath))
+            job.beatDetectionPath = beatPath
+
+            let (bpm, beatCount, resolvedModel) = Self.parseBeatResponse(beatData)
+            job.bpm               = bpm
+            job.beatCount         = beatCount
+            job.resolvedBeatModel = resolvedModel
+            job.tempoHalved       = false
+            persist(job)
+
+            let cached = (try? JSONSerialization.jsonObject(with: beatData) as? [String: Any])?["cached"] as? Bool == true
+            log("Beat detection saved to: \(beatPath)\(cached ? " (cached)" : "")\n")
+            if let b = bpm           { log("BPM: \(b)\n") }
+            if let bc = beatCount    { log("Beat count: \(bc)\n") }
+            if let rm = resolvedModel { log("Resolved beat model: \(rm)\n") }
+
+            // Regenerate beat grid + all downstream charts
+            job.status = .generatingBeatGrid
+            persist(job)
+            currentJob = job
+        } catch {
+            log("Beat redetection failed: \(error.localizedDescription)\n")
+            job.status = .completedWithWarnings
+            persist(job)
+            isRunning = false
+            return
+        }
+
+        isRunning = false
+        await regenerateCharts(offset: currentJob?.barAlignmentOffset ?? 0)
     }
 
     // MARK: - Performer chart config update
@@ -1347,7 +1449,8 @@ final class JobManager: ObservableObject {
     nonisolated private static func generateBeatGrid(
         from beatData: Data,
         bpm: Double?,
-        barAlignmentOffset: Int = 0
+        barAlignmentOffset: Int = 0,
+        beatsPerBar: Int = 4
     ) -> (payload: [String: Any], barCount: Int) {
         guard let json = try? JSONSerialization.jsonObject(with: beatData) as? [String: Any],
               let rawBeats = json["beats"] as? [[String: Any]] else {
@@ -1355,11 +1458,11 @@ final class JobManager: ObservableObject {
         }
 
         let allBeatTimes = rawBeats.compactMap { $0["time"] as? Double }
-        let beatsPerBar  = 4
-        let offset       = max(0, min(3, barAlignmentOffset))
+        let bpb          = max(1, beatsPerBar)
+        let offset       = max(0, min(bpb - 1, barAlignmentOffset))
         var warnings: [String] = []
 
-        if allBeatTimes.count < beatsPerBar {
+        if allBeatTimes.count < bpb {
             warnings.append("Not enough beats for a complete bar.")
         }
 
@@ -1374,31 +1477,39 @@ final class JobManager: ObservableObject {
         var bars: [[String: Any]] = []
         var i = 0
         while i < barBeatTimes.count {
-            let slice    = barBeatTimes[i ..< min(i + beatsPerBar, barBeatTimes.count)]
+            let slice    = barBeatTimes[i ..< min(i + bpb, barBeatTimes.count)]
             let barBeats = Array(slice)
             let barStartRaw = barBeats[0]
-            let nextBarStartRaw: Double? = (i + beatsPerBar < barBeatTimes.count)
-                ? barBeatTimes[i + beatsPerBar]
+            let nextBarStartRaw: Double? = (i + bpb < barBeatTimes.count)
+                ? barBeatTimes[i + bpb]
                 : nil
             let beatEntries: [[String: Any]] = barBeats.enumerated().map { idx, t in
                 ["beat": idx + 1, "time": jsonDecimal(t, 3)]
             }
             let barEndRaw: Double = nextBarStartRaw ?? (barBeats.last ?? barStartRaw)
             bars.append([
-                "bar":   i / beatsPerBar + 1,
+                "bar":   i / bpb + 1,
                 "start": jsonDecimal(barStartRaw, 3),
                 "end":   jsonDecimal(barEndRaw, 3),
                 "beats": beatEntries,
             ])
-            i += beatsPerBar
+            i += bpb
+        }
+
+        let timeSig: String
+        switch bpb {
+        case 2: timeSig = "2/4"
+        case 3: timeSig = "3/4"
+        case 6: timeSig = "6/8"
+        default: timeSig = "4/4"
         }
 
         let bpmJson: Any = bpm.map { jsonDecimal($0, 2) as NSObject } ?? NSNull()
         let payload: [String: Any] = [
             "bpm":                    bpmJson,
             "beatCount":              allBeatTimes.count,
-            "estimatedTimeSignature": "4/4",
-            "beatsPerBar":            beatsPerBar,
+            "estimatedTimeSignature": timeSig,
+            "beatsPerBar":            bpb,
             "barAlignmentOffset":     offset,
             "pickupBeats":            pickupBeats,
             "bars":                   bars,

@@ -8,19 +8,141 @@
 import SwiftUI
 import AVFoundation
 import Combine
+import FirebaseAuth
 
 struct ContentView: View {
     @StateObject private var jobManager = JobManager()
-    @State private var urlInput: String = ""
+    @StateObject private var songStore = FirebaseSongStore()
+    @StateObject private var authStore = AuthStore()
+
+    var body: some View {
+        NavigationStack {
+            SongBrowserView(songStore: songStore, authStore: authStore, jobManager: jobManager)
+        }
+        .frame(minWidth: 900, minHeight: 600)
+        .onChange(of: authStore.isSignedIn) { _, isSignedIn in
+            if isSignedIn {
+                Task { await songStore.fetchSongs() }
+            }
+        }
+    }
+}
+
+// MARK: - Page 1: Song browser
+
+private struct SongBrowserView: View {
+    @ObservedObject var songStore: FirebaseSongStore
+    @ObservedObject var authStore: AuthStore
+    @ObservedObject var jobManager: JobManager
+    @State private var searchText: String = ""
+    @State private var selectedSong: FirebaseSong? = nil
+
+    private var filteredSongs: [FirebaseSong] {
+        let youtubeSongs = songStore.songs.filter { youTubeVideoID(from: $0.link) != nil }
+        guard !searchText.isEmpty else { return youtubeSongs }
+        let q = searchText.lowercased()
+        return youtubeSongs.filter { song in
+            song.title.lowercased().contains(q) ||
+            (song.artists?.first?.name.lowercased().contains(q) ?? false)
+        }
+    }
+
+    private let columns = [GridItem(.adaptive(minimum: 180), spacing: 16)]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Top bar
+            HStack {
+                Text("ChordAdmin")
+                    .font(.title2.bold())
+                Spacer()
+                AuthStatusView(authStore: authStore)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+
+            Divider()
+
+            // Search bar
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.secondary)
+                TextField("Search songs…", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(.body)
+                if !searchText.isEmpty {
+                    Button { searchText = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+
+            // Grid
+            if songStore.isLoading {
+                Spacer()
+                ProgressView("Loading songs…")
+                Spacer()
+            } else if songStore.songs.isEmpty {
+                Spacer()
+                VStack(spacing: 8) {
+                    Image(systemName: "music.note.list")
+                        .font(.largeTitle)
+                        .foregroundColor(.secondary)
+                    Text("No songs found")
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(filteredSongs) { song in
+                            NavigationLink(value: song) {
+                                SongCard(song: song)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+        }
+        .navigationDestination(for: FirebaseSong.self) { song in
+            ProcessingView(song: song, jobManager: jobManager)
+        }
+        .task {
+            if songStore.songs.isEmpty {
+                await songStore.fetchSongs()
+            }
+        }
+    }
+}
+
+// MARK: - Page 2: Processing
+
+private struct ProcessingView: View {
+    let song: FirebaseSong
+    @ObservedObject var jobManager: JobManager
+    @State private var urlInput: String
     @State private var logCollapsed: Bool = false
+
+    init(song: FirebaseSong, jobManager: JobManager) {
+        self.song = song
+        self.jobManager = jobManager
+        _urlInput = State(initialValue: song.link ?? "")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-
-            Text("ChordAdmin")
-                .font(.title)
-                .bold()
-
             // URL input + Start button
             HStack {
                 TextField("YouTube URL", text: $urlInput)
@@ -34,7 +156,7 @@ struct ContentView: View {
                 .buttonStyle(.borderedProminent)
             }
 
-            // Bento layout: left job info | right log
+            // Bento layout: left job info | chord chart | log
             HStack(alignment: .top, spacing: 12) {
 
                 // Left pane – scrollable job details
@@ -58,11 +180,24 @@ struct ContentView: View {
                                 || job.metadataPath != nil || job.audioHealthPath != nil
                             if hasFiles {
                                 BentoSection(title: "Files") {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        if let p = job.originalAudioPath { PathRow(label: "Original audio", path: p, playable: true) }
-                                        if let p = job.analysisWavPath   { PathRow(label: "Analysis WAV",   path: p, playable: true) }
-                                        if let p = job.metadataPath      { PathRow(label: "Metadata JSON",  path: p) }
-                                        if let p = job.audioHealthPath   { PathRow(label: "Audio Health",   path: p) }
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        if let p = job.originalAudioPath { CompactFileRow(label: "Original audio", path: p, playable: true) }
+                                        if let p = job.analysisWavPath   { CompactFileRow(label: "Analysis WAV",   path: p, playable: true) }
+                                        if let p = job.metadataPath      { CompactFileRow(label: "Metadata JSON",  path: p) }
+                                        if let p = job.audioHealthPath   { CompactFileRow(label: "Audio Health",   path: p) }
+
+                                        Divider().padding(.vertical, 2)
+
+                                        Button {
+                                            let rp = job.originalAudioPath ?? job.analysisWavPath ?? job.metadataPath ?? job.audioHealthPath
+                                            if let rp {
+                                                NSWorkspace.shared.open(URL(fileURLWithPath: rp).deletingLastPathComponent())
+                                            }
+                                        } label: {
+                                            Label("Reveal Folder", systemImage: "folder")
+                                                .font(.caption)
+                                        }
+                                        .buttonStyle(.bordered)
                                     }
                                 }
                             }
@@ -81,7 +216,7 @@ struct ContentView: View {
 
                             if job.audioHealthPath != nil {
                                 BentoSection(title: "Backend") {
-                                    BackendPanel(job: job)
+                                    BackendPanel(job: job, jobManager: jobManager)
                                 }
                             }
 
@@ -117,7 +252,7 @@ struct ContentView: View {
                         .padding(.horizontal, 10)
                         .padding(.top, 10)
                         .padding(.bottom, 6)
-                        ChordChartModeSwitcher(job: job, jobManager: jobManager)
+                        ChordChartModeSwitcher(job: job, jobManager: jobManager, song: song)
                             .padding(.horizontal, 10)
                             .padding(.bottom, 10)
                             .frame(maxHeight: .infinity)
@@ -133,7 +268,6 @@ struct ContentView: View {
 
                 // Right pane – log output
                 ZStack(alignment: .topLeading) {
-                    // Expanded state
                     if !logCollapsed {
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
@@ -182,7 +316,6 @@ struct ContentView: View {
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
 
-                    // Collapsed strip
                     if logCollapsed {
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) { logCollapsed = false }
@@ -214,11 +347,151 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding()
-        .frame(minWidth: 1100, minHeight: 520)
+        .navigationTitle(song.title)
+        .navigationSubtitle(song.artists?.first?.name ?? "")
     }
 }
 
-// MARK: - Bento section container
+// MARK: - Auth status view
+
+private struct AuthStatusView: View {
+    @ObservedObject var authStore: AuthStore
+
+    var body: some View {
+        if authStore.isSigningIn {
+            ProgressView()
+                .scaleEffect(0.7)
+                .padding(.trailing, 4)
+        } else if authStore.isSignedIn {
+            HStack(spacing: 8) {
+                if let email = authStore.user?.email {
+                    Label(email, systemImage: "person.fill")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                Button("Sign Out") {
+                    authStore.signOut()
+                }
+                .buttonStyle(.bordered)
+                .font(.caption)
+            }
+        } else {
+            VStack(alignment: .trailing, spacing: 2) {
+                Button(action: { authStore.signInWithApple() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "apple.logo")
+                        Text("Sign in with Apple")
+                    }
+                    .font(.caption)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.black)
+
+                if let error = authStore.errorMessage {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundColor(.red)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Song browser
+
+private func youTubeVideoID(from urlString: String?) -> String? {
+    guard let urlString, let url = URL(string: urlString) else { return nil }
+    if url.host?.contains("youtu.be") == true {
+        return url.pathComponents.dropFirst().first
+    }
+    let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    return components?.queryItems?.first(where: { $0.name == "v" })?.value
+}
+
+private struct SongCard: View {
+    let song: FirebaseSong
+
+    private var thumbnailURL: URL? {
+        guard let videoID = youTubeVideoID(from: song.link) else { return nil }
+        return URL(string: "https://img.youtube.com/vi/\(videoID)/mqdefault.jpg")
+    }
+
+    private var hasManySection: Bool { (song.sections?.count ?? 0) > 3 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+                if let thumbURL = thumbnailURL {
+                    AsyncImage(url: thumbURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(16 / 9, contentMode: .fill)
+                        case .failure:
+                            thumbnailPlaceholder
+                        case .empty:
+                            Color.gray.opacity(0.15)
+                                .overlay(ProgressView().scaleEffect(0.6))
+                        @unknown default:
+                            thumbnailPlaceholder
+                        }
+                    }
+                    .frame(height: 90)
+                    .clipped()
+                    .overlay(sectionsBadge, alignment: .bottomTrailing)
+                } else {
+                    thumbnailPlaceholder
+                        .frame(height: 90)
+                        .overlay(sectionsBadge, alignment: .bottomTrailing)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(song.title)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(2)
+                        .foregroundColor(.primary)
+                    if let artist = song.artists?.first?.name, !artist.isEmpty {
+                        Text(artist)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+            }
+            .frame(minWidth: 0, maxWidth: .infinity)
+            .background(Color(NSColor.windowBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.gray.opacity(0.15))
+            )
+    }
+
+    @ViewBuilder private var sectionsBadge: some View {
+        if hasManySection {
+            Text("🎹")
+                .font(.system(size: 14))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 3)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                .padding(6)
+        }
+    }
+
+    private var thumbnailPlaceholder: some View {
+        Color.gray.opacity(0.12)
+            .overlay(
+                Image(systemName: "music.note")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+            )
+    }
+}
 
 private struct BentoSection<Content: View>: View {
     let title: String
@@ -280,39 +553,70 @@ private struct StatusBadge: View {
     }
 }
 
+private struct CompactFileRow: View {
+    let label: String
+    let path: String
+    var playable: Bool = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(width: 88, alignment: .leading)
+            Text(URL(fileURLWithPath: path).lastPathComponent)
+                .font(.system(.caption2, design: .monospaced))
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundColor(.primary)
+            Spacer()
+            if playable {
+                Button {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: path))
+                } label: {
+                    Image(systemName: "play.circle")
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.accentColor)
+            }
+        }
+    }
+}
+
 private struct PathRow: View {
     let label: String
     let path: String
     var playable: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 6) {
             Text(label)
-                .font(.callout.weight(.semibold))
-            HStack(spacing: 8) {
-                Text(path)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-                    .truncationMode(.middle)
-                Spacer()
-                if playable {
-                    Button {
-                        NSWorkspace.shared.open(URL(fileURLWithPath: path))
-                    } label: {
-                        Label("Play", systemImage: "play.circle")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.bordered)
-                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            Text(URL(fileURLWithPath: path).lastPathComponent)
+                .font(.system(.caption2, design: .monospaced))
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundColor(.primary)
+            Spacer()
+            if playable {
                 Button {
-                    NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+                    NSWorkspace.shared.open(URL(fileURLWithPath: path))
                 } label: {
-                    Label("Reveal", systemImage: "folder")
-                        .font(.caption)
+                    Image(systemName: "play.circle").font(.caption)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
+                .foregroundColor(.accentColor)
             }
+            Button {
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+            } label: {
+                Image(systemName: "folder").font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
         }
     }
 }
@@ -425,6 +729,10 @@ private struct AudioHealthPanel: View {
 
 private struct BackendPanel: View {
     let job: AnalysisJob
+    @ObservedObject var jobManager: JobManager
+    @State private var seedBpm: Double = 120
+    @State private var useSeedBpm: Bool = false
+    @State private var stableTempo: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -441,35 +749,6 @@ private struct BackendPanel: View {
             }
 
             if job.analysisBackendAvailable == true {
-                if let beatPath = job.beatDetectionPath {
-                    PathRow(label: "Beat Detection JSON:", path: beatPath)
-                }
-                if let gridPath = job.beatGridPath {
-                    PathRow(label: "Beat Grid JSON:", path: gridPath)
-                }
-                if let chordPath = job.chordRecognitionPath {
-                    PathRow(label: "Chord Recognition JSON:", path: chordPath)
-                }
-                if let cleanedPath = job.chordCleanedPath {
-                    PathRow(label: "Chord Cleaned JSON:", path: cleanedPath)
-                }
-                if let chartPath = job.chordChartDraftPath {
-                    PathRow(label: "Chord Chart Draft JSON:", path: chartPath)
-                }
-                if let simplePath = job.chordChartSimplePath {
-                    PathRow(label: "Chord Chart Simple JSON:", path: simplePath)
-                }
-                if let candidatesPath = job.sectionCandidatesPath {
-                    PathRow(label: "Section Candidates JSON:", path: candidatesPath)
-                }
-
-                if let preview = job.chordPreview, !preview.isEmpty {
-                    ChordPreviewPanel(chords: preview, totalCount: job.chordCount)
-                }
-
-                if let preview = job.sectionCandidatePreview, !preview.isEmpty {
-                    SectionCandidatesPreviewPanel(candidates: preview, totalCount: job.sectionCandidateCount)
-                }
 
                 let hasStats = job.requestedBeatModel != nil || job.resolvedBeatModel != nil
                     || job.bpm != nil || job.beatCount != nil || job.barCount != nil || job.chordCount != nil
@@ -486,6 +765,55 @@ private struct BackendPanel: View {
                         if let v = job.chordCount         { row("Chord count",        value: "\(v)") }
                     }
                     .font(.caption)
+                }
+
+                if job.analysisBackendAvailable == true && job.analysisWavPath != nil {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle(isOn: $useSeedBpm) {
+                            Text("Constrain BPM range")
+                                .font(.caption)
+                        }
+                        .toggleStyle(.checkbox)
+
+                        if useSeedBpm {
+                            HStack(spacing: 8) {
+                                Text("Seed BPM:")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Stepper(
+                                    value: $seedBpm,
+                                    in: 40...300,
+                                    step: 1,
+                                    label: {
+                                        let lo = seedBpm * 0.8
+                                        let hi = seedBpm * 1.2
+                                        Text(String(format: "%.0f  (range: %.0f–%.0f)", seedBpm, lo, hi))
+                                            .font(.system(.caption, design: .monospaced))
+                                    }
+                                )
+                            }
+                        }
+
+                        Toggle(isOn: $stableTempo) {
+                            Text("Stable tempo (high transition_lambda)")
+                                .font(.caption)
+                        }
+                        .toggleStyle(.checkbox)
+                        .help("Forces madmom to commit to one tempo throughout the track. Useful when it keeps drifting or detecting double/half-time.")
+
+                        Button {
+                            let minBpm = useSeedBpm ? seedBpm * 0.8 : nil
+                            let maxBpm = useSeedBpm ? seedBpm * 1.2 : nil
+                            let tl: Double? = stableTempo ? 1000 : nil
+                            Task { await jobManager.redetectBeats(minBpm: minBpm, maxBpm: maxBpm, transitionLambda: tl) }
+                        } label: {
+                            Label("Redetect Beats & Tempo", systemImage: "waveform.and.magnifyingglass")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(jobManager.isRunning)
+                    }
+                    .padding(.top, 4)
                 }
             }
         }
@@ -948,6 +1276,7 @@ private enum ChordDisplayMode: String, CaseIterable {
 private struct ChordChartModeSwitcher: View {
     let job: AnalysisJob
     @ObservedObject var jobManager: JobManager
+    let song: FirebaseSong
     @State private var localOffset: Int = 0
     @State private var loadedPerformerBars: [ChordChartBarEntry] = []
     @StateObject private var sectionStore = SectionStore()
@@ -959,8 +1288,20 @@ private struct ChordChartModeSwitcher: View {
     @State private var waveZoom: CGFloat = 1.0
     @State private var waveFollowPlayhead: Bool = true
     @State private var loadedRawChords: [CleanedChord] = []
+    // Export to TheStageBee
+    @StateObject private var exportService = StageBeeExportService()
+    @State private var barSubdivisions: [Int: Int] = [:]
+    @State private var manualBpmText: String = ""
+    @State private var manualBpmActive: Bool = false
 
     private var audioPath: String? { job.analysisWavPath ?? job.originalAudioPath }
+
+    private func applyManualBpm() {
+        guard let bpm = Double(manualBpmText.trimmingCharacters(in: .whitespaces)),
+              bpm > 10, bpm < 500 else { return }
+        manualBpmActive = true
+        Task { await jobManager.setManualBpm(bpm) }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1094,7 +1435,87 @@ private struct ChordChartModeSwitcher: View {
                 .help(isHalved ? "Restore full tempo" : "Halve detected tempo (use when BPM is double the true value)")
                 .disabled(jobManager.isRunning)
 
+                Divider().frame(height: 16)
+
+                // Beats-per-bar override — useful for 6/8 songs where madmom detects 3 beats/bar
+                let currentBpb = job.beatsPerBarOverride ?? 4
+                ForEach([2, 3, 4], id: \.self) { n in
+                    Button("\(n)/bar") {
+                        guard !jobManager.isRunning else { return }
+                        Task { await jobManager.setBeatsPerBar(n) }
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.caption2)
+                    .foregroundColor(currentBpb == n ? .accentColor : .primary)
+                    .background(currentBpb == n ? Color.accentColor.opacity(0.12) : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .help(n == 3 ? "3 beats/bar — use when madmom detects 6/8 as 3/4" : "\(n) beats per bar")
+                    .disabled(jobManager.isRunning)
+                }
+
+                Divider().frame(height: 16)
+
+                // Manual BPM override
+                Text("BPM:").font(.caption2).foregroundColor(.secondary)
+                TextField(
+                    String(format: "%.0f", job.bpm ?? 0),
+                    text: $manualBpmText
+                )
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.caption2, design: .monospaced))
+                .frame(width: 46)
+                .onSubmit {
+                    applyManualBpm()
+                }
+                if manualBpmActive {
+                    Button("×") {
+                        manualBpmText = ""
+                        manualBpmActive = false
+                        Task { await jobManager.setManualBpm(nil) }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .help("Clear manual BPM — revert to detected value")
+                }
+
                 Spacer()
+
+                // Export to TheStageBee (only when performer chart + sections exist)
+                if job.chordChartPerformerPath != nil && job.sectionsPath != nil {
+                    Divider().frame(height: 16)
+                    Button {
+                        guard let folder = jobManager.jobFolder else { return }
+                        Task {
+                            try? await exportService.export(
+                                job: job,
+                                jobFolder: folder,
+                                song: song,
+                                barSubdivisions: barSubdivisions
+                            )
+                        }
+                    } label: {
+                        switch exportService.state {
+                        case .exporting:
+                            HStack(spacing: 4) {
+                                ProgressView().scaleEffect(0.6)
+                                Text("Exporting…")
+                            }
+                        case .success:
+                            Label("Exported", systemImage: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                        case .failure(let msg):
+                            Label(msg, systemImage: "exclamationmark.triangle.fill")
+                                .foregroundColor(.red)
+                        default:
+                            Label("Export to StageBee", systemImage: "arrow.up.circle")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.caption2)
+                    .disabled(exportService.state == .exporting)
+                    .help("Update chord chart and tempo on the TheStageBee song")
+                }
             }
 
             ChordProgressionView(
@@ -1110,7 +1531,8 @@ private struct ChordChartModeSwitcher: View {
                 onSeek: { bar, seekTime in
                     audioPlayer.seek(to: seekTime)
                     selectedDraftBar = bar
-                }
+                },
+                barSubdivisions: $barSubdivisions
             )
             .frame(maxHeight: .infinity)
         }
@@ -1123,6 +1545,8 @@ private struct ChordChartModeSwitcher: View {
                 loadedDraftBars = []
                 loadedRawChords = []
                 localOffset = job.barAlignmentOffset ?? 0
+                manualBpmActive = job.manualBpm != nil
+                manualBpmText = job.manualBpm.map { String(format: "%.0f", $0) } ?? ""
                 selectedDraftBar = nil
                 waveZoom = 1
                 lastLoadedJobId = job.id
@@ -1221,7 +1645,7 @@ private struct ChordProgressionView: View {
     var activeBar: ChordChartBarEntry? = nil
     var onSeek: ((ChordChartBarEntry, Double) -> Void)? = nil
 
-    @State private var barSubdivisions: [Int: Int] = [:]
+    @Binding var barSubdivisions: [Int: Int]
     @State private var renamingSection: ChordSection? = nil
     @State private var renameText: String = ""
     @State private var keyMonitor: Any? = nil
@@ -1245,12 +1669,14 @@ private struct ChordProgressionView: View {
                     set: { if let bar = selectedBar { barSubdivisions[bar.bar] = $0 } }
                 )
                 Picker("", selection: subBinding) {
-                    Text("♩ 4").tag(4)
-                    Text("♪ 8").tag(8)
-                    Text("𝅘𝅥𝅯 16").tag(16)
+                    Text("1").tag(1)
+                    Text("1/2").tag(2)
+                    Text("1/4").tag(4)
+                    Text("1/8").tag(8)
+                    Text("1/16").tag(16)
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 160)
+                .frame(width: 230)
                 .disabled(selectedBar == nil)
                 Spacer()
                 if sectionStore.sections.count > 1 {
@@ -1847,3 +2273,4 @@ private struct PerformerProgressionView: View {
         }
     }
 }
+
