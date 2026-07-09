@@ -14,6 +14,7 @@
 
 /* Begin PBXFileReference section */
 		97CD91352FAAEB9500DABA18 /* ChordAdmin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChordAdmin.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CA1100000000000000000001 /* ChordAdminTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ChordAdminTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -22,7 +23,22 @@
 			path = ChordAdmin;
 			sourceTree = "<group>";
 		};
+		CA1200000000000000000001 /* ChordAdminTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ChordAdminTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXContainerItemProxy section */
+		CA1300000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97CD912D2FAAEB9500DABA18 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 97CD91342FAAEB9500DABA18;
+			remoteInfo = ChordAdmin;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		97CD91322FAAEB9500DABA18 /* Frameworks */ = {
@@ -35,6 +51,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CA1400000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -42,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				97CD91372FAAEB9500DABA18 /* ChordAdmin */,
+				CA1200000000000000000001 /* ChordAdminTests */,
 				97CD91362FAAEB9500DABA18 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -50,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				97CD91352FAAEB9500DABA18 /* ChordAdmin.app */,
+				CA1100000000000000000001 /* ChordAdminTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -81,6 +106,27 @@
 			productName = ChordAdmin;
 			productReference = 97CD91352FAAEB9500DABA18 /* ChordAdmin.app */;
 			productType = "com.apple.product-type.application";
+		};
+		CA1500000000000000000001 /* ChordAdminTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CA1600000000000000000001 /* Build configuration list for PBXNativeTarget "ChordAdminTests" */;
+			buildPhases = (
+				CA1700000000000000000001 /* Sources */,
+				CA1400000000000000000001 /* Frameworks */,
+				CA1800000000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CA1900000000000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CA1200000000000000000001 /* ChordAdminTests */,
+			);
+			name = ChordAdminTests;
+			productName = ChordAdminTests;
+			productReference = CA1100000000000000000001 /* ChordAdminTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -115,12 +161,20 @@
 			projectRoot = "";
 			targets = (
 				97CD91342FAAEB9500DABA18 /* ChordAdmin */,
+				CA1500000000000000000001 /* ChordAdminTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		97CD91332FAAEB9500DABA18 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CA1800000000000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -137,7 +191,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CA1700000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CA1900000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 97CD91342FAAEB9500DABA18 /* ChordAdmin */;
+			targetProxy = CA1300000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		97CD913E2FAAEB9600DABA18 /* Debug */ = {
@@ -326,6 +395,40 @@
 			};
 			name = Release;
 		};
+		CA1600000000000000000002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9TX96KT6W4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tanaquiapps.ChordAdminTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ChordAdmin.app/Contents/MacOS/ChordAdmin";
+			};
+			name = Debug;
+		};
+		CA1600000000000000000003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9TX96KT6W4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tanaquiapps.ChordAdminTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ChordAdmin.app/Contents/MacOS/ChordAdmin";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -343,6 +446,15 @@
 			buildConfigurations = (
 				97CD91412FAAEB9600DABA18 /* Debug */,
 				97CD91422FAAEB9600DABA18 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CA1600000000000000000001 /* Build configuration list for PBXNativeTarget "ChordAdminTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA1600000000000000000002 /* Debug */,
+				CA1600000000000000000003 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

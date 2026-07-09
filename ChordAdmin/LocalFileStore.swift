@@ -18,15 +18,50 @@ struct LocalFileStore {
         return appSupport.appendingPathComponent("ChordAdmin/url_cache.json")
     }()
 
+    private static let requiredCacheFiles = ["analysis.wav", "job.json"]
+
+    // MARK: - Cache validation
+
+    /// Whether a decoded job should be reused from the URL cache.
+    static func isCachedJobValid(_ job: AnalysisJob) -> Bool {
+        guard job.analysisPipelineVersion == AppConfig.analysisPipelineVersion else { return false }
+        switch job.status {
+        case .completed, .completedWithWarnings:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Loads a validated cached job for `url`, evicting stale entries when needed.
+    static func loadValidCachedJob(for url: String) -> (job: AnalysisJob, folder: URL)? {
+        guard let folder = cachedJobFolder(for: url) else { return nil }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let jobURL = folder.appendingPathComponent("job.json")
+        guard let data = try? Data(contentsOf: jobURL),
+              let job = try? decoder.decode(AnalysisJob.self, from: data) else {
+            evictURLCache(url: url)
+            return nil
+        }
+
+        guard isCachedJobValid(job) else {
+            evictURLCache(url: url)
+            return nil
+        }
+
+        return (job, folder)
+    }
+
     // MARK: - URL cache
 
-    /// Returns the job folder URL for `url` if the folder contains a completed job,
+    /// Returns the job folder URL for `url` if the folder contains required artefacts,
     /// or `nil` if there is no valid cache entry.
     static func cachedJobFolder(for url: String) -> URL? {
         guard let map = readURLCache(), let folderPath = map[url] else { return nil }
         let folder = URL(fileURLWithPath: folderPath)
-        let required = ["analysis.wav", "job.json"]
-        for name in required {
+        for name in requiredCacheFiles {
             guard FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path) else {
                 return nil
             }
@@ -72,10 +107,14 @@ struct LocalFileStore {
     }
 
     static func saveJob(_ job: AnalysisJob, to folder: URL) throws {
+        var jobToSave = job
+        if jobToSave.analysisPipelineVersion != AppConfig.analysisPipelineVersion {
+            jobToSave.analysisPipelineVersion = AppConfig.analysisPipelineVersion
+        }
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
         encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(job)
+        let data = try encoder.encode(jobToSave)
         try data.write(to: folder.appendingPathComponent("job.json"))
     }
 
@@ -96,26 +135,21 @@ struct LocalFileStore {
     /// Returns the `sectionCount` from the cached job whose URL shares the same
     /// YouTube video ID as `url`. Handles format mismatches (youtu.be vs youtube.com).
     static func cachedSectionCount(for url: String) -> Int? {
-        guard let targetID = youTubeVideoID(from: url), let map = readURLCache() else { return nil }
+        guard let targetID = YouTubeURLUtils.youTubeVideoID(from: url), let map = readURLCache() else { return nil }
         for (cacheUrl, folderPath) in map {
-            guard youTubeVideoID(from: cacheUrl) == targetID else { continue }
+            guard YouTubeURLUtils.youTubeVideoID(from: cacheUrl) == targetID else { continue }
             let folder = URL(fileURLWithPath: folderPath)
-            let required = ["analysis.wav", "job.json"]
-            guard required.allSatisfy({ FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }) else { continue }
+            guard requiredCacheFiles.allSatisfy({
+                FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path)
+            }) else { continue }
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            return (try? decoder.decode(AnalysisJob.self, from: (try? Data(contentsOf: folder.appendingPathComponent("job.json"))) ?? Data()))?.sectionCount
+            guard let data = try? Data(contentsOf: folder.appendingPathComponent("job.json")),
+                  let job = try? decoder.decode(AnalysisJob.self, from: data),
+                  isCachedJobValid(job) else { continue }
+            return job.sectionCount
         }
         return nil
-    }
-
-    private static func youTubeVideoID(from urlString: String) -> String? {
-        guard let url = URL(string: urlString) else { return nil }
-        if url.host?.contains("youtu.be") == true {
-            return url.pathComponents.dropFirst().first
-        }
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        return components?.queryItems?.first(where: { $0.name == "v" })?.value
     }
 
     static func saveSourceInfo(_ info: [String: String], to folder: URL) throws {
