@@ -240,7 +240,7 @@ private struct ProcessingView: View {
 
                 // Middle pane – chord chart
                 if let job = jobManager.currentJob,
-                   job.chordChartPreview != nil || job.chordChartSimplePreview != nil || job.chordChartSimplePath != nil {
+                   job.chordChartPreview != nil {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Text("CHORD CHART")
@@ -924,43 +924,6 @@ private struct ChordChartPreviewPanel: View {
                         }
                         .padding(.leading, 44)
                     }
-                }
-            }
-        }
-        .padding(8)
-        .background(Color(NSColor.textBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-        .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(Color.gray.opacity(0.2))
-        )
-    }
-}
-
-private struct ChordChartSimplePreviewPanel: View {
-    let bars: [ChordChartSimpleBarEntry]
-    let totalCount: Int?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            let shown = min(bars.count, 16)
-            let label = totalCount.map { "First \(shown) of \($0) bars" } ?? "First \(shown) bars"
-            Text(label)
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-
-            ForEach(Array(bars.prefix(16).enumerated()), id: \.offset) { _, bar in
-                HStack(spacing: 6) {
-                    Text("Bar \(bar.bar)")
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundColor(.secondary)
-                        .frame(width: 44, alignment: .leading)
-                    Text(bar.chord)
-                        .font(.caption.weight(.semibold))
-                    Spacer()
-                    Text(String(format: "%.3f – %.3f", bar.start, bar.end))
-                        .font(.system(.caption2, design: .monospaced))
-                        .foregroundColor(.secondary)
                 }
             }
         }
