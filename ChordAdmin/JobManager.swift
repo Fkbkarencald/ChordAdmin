@@ -28,7 +28,6 @@ enum JobError: LocalizedError {
 final class JobManager: ObservableObject {
 
     // MARK: - Backend config
-    private static let backendBaseUrl    = "http://localhost:5001"
     private static let defaultBeatModel  = "auto"
     private static let defaultChordModel = "chord-cnn-lstm"
 
@@ -41,23 +40,15 @@ final class JobManager: ObservableObject {
     func startJob(url: String) async {
         guard !isRunning else { return }
 
-        let cleanedUrl = Self.cleanYouTubeURL(url)
+        let cleanedUrl = YouTubeURLUtils.cleanYouTubeURL(url)
 
         // — URL cache check —
-        if let cachedFolder = LocalFileStore.cachedJobFolder(for: cleanedUrl) {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            if let data = try? Data(contentsOf: cachedFolder.appendingPathComponent("job.json")),
-               let cached = try? decoder.decode(AnalysisJob.self, from: data) {
-                jobFolder  = cachedFolder
-                currentJob = cached
-                logOutput  = "(Loaded from cache — song and analysis results are reused)\n"
-                isRunning  = false
-                return
-            } else {
-                // Stale entry — evict and proceed normally
-                LocalFileStore.evictURLCache(url: cleanedUrl)
-            }
+        if let cached = LocalFileStore.loadValidCachedJob(for: cleanedUrl) {
+            jobFolder  = cached.folder
+            currentJob = cached.job
+            logOutput  = "(Loaded from cache — song and analysis results are reused)\n"
+            isRunning  = false
+            return
         }
 
         let jobId = UUID().uuidString
@@ -100,7 +91,7 @@ final class JobManager: ObservableObject {
                 arguments: [
                     "-f", "ba/b",
                     "--no-playlist",
-                    "--js-runtimes", "deno:/opt/homebrew/bin/deno",
+                    "--js-runtimes", "deno:\(ToolChecker.deno)",
                     "--print", "after_move:filepath",
                     "-o", outputTemplate,
                     cleanedUrl
@@ -265,14 +256,14 @@ final class JobManager: ObservableObject {
             // — Check backend —
             job.status = .checkingAnalysisBackend
             persist(job)
-            log("Checking backend at \(Self.backendBaseUrl)\u{2026}\n")
+            log("Checking backend at \(AppConfig.backendBaseURL)\u{2026}\n")
 
-            let backendAvailable = await Self.checkBackendHealth(baseUrl: Self.backendBaseUrl)
+            let backendAvailable = await Self.checkBackendHealth(baseUrl: AppConfig.backendBaseURL)
             job.analysisBackendAvailable = backendAvailable
-            job.backendBaseUrl = Self.backendBaseUrl
+            job.backendBaseUrl = AppConfig.backendBaseURL
 
             if !backendAvailable {
-                job.backendErrorMessage = "Backend unavailable at \(Self.backendBaseUrl)"
+                job.backendErrorMessage = "Backend unavailable at \(AppConfig.backendBaseURL)"
                 log("Backend unavailable. Job completed with warnings.\n")
                 job.status = .completedWithWarnings
                 job.completedAt = Date()
@@ -291,7 +282,7 @@ final class JobManager: ObservableObject {
                 let beatPath = folder.appendingPathComponent("beat.detection.json").path
                 do {
                     let beatData = try await Self.postAudioFile(
-                        to: "\(Self.backendBaseUrl)/api/detect-beats",
+                        to: "\(AppConfig.backendBaseURL)/api/detect-beats",
                         fileURL: wavURL,
                         params: ["model": Self.defaultBeatModel]
                     )
@@ -313,7 +304,16 @@ final class JobManager: ObservableObject {
                     persist(job)
                     log("Generating beat grid…\n")
                     let gridPath = folder.appendingPathComponent("beat.grid.json").path
-                    let (gridPayload, barCount) = Self.generateBeatGrid(from: beatData, bpm: bpm, barAlignmentOffset: 0, beatsPerBar: job.beatsPerBarOverride ?? 4)
+                    let beatsPerBar = BeatGridGenerator.effectiveBeatsPerBar(
+                        override: job.beatsPerBarOverride,
+                        beatData: beatData
+                    )
+                    let (gridPayload, barCount) = BeatGridGenerator.generateBeatGrid(
+                        from: beatData,
+                        bpm: bpm,
+                        barAlignmentOffset: 0,
+                        beatsPerBar: beatsPerBar
+                    )
                     if !gridPayload.isEmpty,
                        let gridData = try? JSONSerialization.data(withJSONObject: gridPayload, options: .prettyPrinted) {
                         try gridData.write(to: URL(fileURLWithPath: gridPath))
@@ -338,7 +338,7 @@ final class JobManager: ObservableObject {
                 let chordPath = folder.appendingPathComponent("chord.recognition.json").path
                 do {
                     let chordData = try await Self.postAudioFile(
-                        to: "\(Self.backendBaseUrl)/api/recognize-chords",
+                        to: "\(AppConfig.backendBaseURL)/api/recognize-chords",
                         fileURL: wavURL,
                         params: ["model": Self.defaultChordModel]
                     )
@@ -510,8 +510,16 @@ final class JobManager: ObservableObject {
             effectiveBeatData = beatData
             effectiveBpm = job.manualBpm ?? job.bpm
         }
-        let beatsPerBar = job.beatsPerBarOverride ?? 4
-        let (gridPayload, barCount) = Self.generateBeatGrid(from: effectiveBeatData, bpm: effectiveBpm, barAlignmentOffset: offset, beatsPerBar: beatsPerBar)
+        let beatsPerBar = BeatGridGenerator.effectiveBeatsPerBar(
+            override: job.beatsPerBarOverride,
+            beatData: effectiveBeatData
+        )
+        let (gridPayload, barCount) = BeatGridGenerator.generateBeatGrid(
+            from: effectiveBeatData,
+            bpm: effectiveBpm,
+            barAlignmentOffset: offset,
+            beatsPerBar: beatsPerBar
+        )
         guard !gridPayload.isEmpty,
               let gridData = try? JSONSerialization.data(withJSONObject: gridPayload, options: .prettyPrinted)
         else { isRunning = false; return }
@@ -651,7 +659,7 @@ final class JobManager: ObservableObject {
             persist(job)
 
             let beatData = try await Self.postAudioFile(
-                to: "\(Self.backendBaseUrl)/api/detect-beats",
+                to: "\(AppConfig.backendBaseURL)/api/detect-beats",
                 fileURL: wavURL,
                 params: {
                     var p: [String: String] = ["model": Self.defaultBeatModel, "force": "true"]
@@ -1243,34 +1251,26 @@ final class JobManager: ObservableObject {
 
             var overlapping:   [[String: Any]]          = []
             var previewChords: [ChordChartChordEntry]   = []
-            var primaryChord: String? = nil
-            var maxOverlap   = 0.0
+            let overlapResults = ChordOverlapLogic.overlappingChords(
+                barStart: barStart,
+                barEnd: barEnd,
+                chords: rawChords
+            )
+            let primaryChord: String? = ChordOverlapLogic.primaryChord(from: overlapResults)
 
-            for chord in rawChords {
-                guard let chordStart   = chord["start"]        as? Double,
-                      let chordEnd     = chord["end"]          as? Double,
-                      let displayChord = chord["displayChord"] as? String else { continue }
-
-                let overlapSecs = min(barEnd, chordEnd) - max(barStart, chordStart)
-                guard overlapSecs > 0 else { continue }
-
+            for overlap in overlapResults {
                 overlapping.append([
-                    "displayChord":   displayChord,
-                    "start":          jsonDecimal(chordStart, 3),
-                    "end":            jsonDecimal(chordEnd, 3),
-                    "overlapSeconds": jsonDecimal(overlapSecs, 3),
+                    "displayChord":   overlap.displayChord,
+                    "start":          jsonDecimal(overlap.start, 3),
+                    "end":            jsonDecimal(overlap.end, 3),
+                    "overlapSeconds": jsonDecimal(overlap.overlapSeconds, 3),
                 ])
                 previewChords.append(ChordChartChordEntry(
-                    displayChord:   displayChord,
-                    start:          round3(chordStart),
-                    end:            round3(chordEnd),
-                    overlapSeconds: round3(overlapSecs)
+                    displayChord:   overlap.displayChord,
+                    start:          round3(overlap.start),
+                    end:            round3(overlap.end),
+                    overlapSeconds: round3(overlap.overlapSeconds)
                 ))
-
-                if overlapSecs > maxOverlap {
-                    maxOverlap   = overlapSecs
-                    primaryChord = displayChord
-                }
             }
 
             if primaryChord == nil {
@@ -1353,7 +1353,8 @@ final class JobManager: ObservableObject {
     nonisolated private static func checkBackendHealth(baseUrl: String) async -> Bool {
         guard let url = URL(string: "\(baseUrl)/health") else { return false }
         do {
-            let (_, response) = try await URLSession.shared.data(from: url)
+            let session = BackendHTTPClient.session(for: .healthCheck)
+            let (_, response) = try await session.data(from: url)
             return (response as? HTTPURLResponse)?.statusCode == 200
         } catch {
             return false
@@ -1365,32 +1366,72 @@ final class JobManager: ObservableObject {
         fileURL: URL,
         params: [String: String]
     ) async throws -> Data {
-        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        guard let url = URL(string: urlString) else { throw BackendHTTPError.badURL }
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        if fileSize > AppConfig.maxWavUploadBytes {
+            throw BackendHTTPError.fileTooLarge(bytes: fileSize, limit: AppConfig.maxWavUploadBytes)
+        }
 
         let boundary = UUID().uuidString
+        let bodyURL = try writeMultipartBody(
+            fileURL: fileURL,
+            params: params,
+            boundary: boundary
+        )
+        defer { try? FileManager.default.removeItem(at: bodyURL) }
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
-        var body = Data()
+        let session = BackendHTTPClient.session(for: .audioUpload)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.upload(for: request, fromFile: bodyURL)
+        } catch {
+            throw BackendHTTPClient.mapURLError(error, operation: "Beat/chord analysis upload")
+        }
+
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw BackendHTTPError.httpStatus(http.statusCode)
+        }
+        return data
+    }
+
+    nonisolated private static func writeMultipartBody(
+        fileURL: URL,
+        params: [String: String],
+        boundary: String
+    ) throws -> URL {
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("chordadmin-upload-\(UUID().uuidString).multipart")
+        FileManager.default.createFile(atPath: tempURL.path, contents: nil)
+
+        let writer = try FileHandle(forWritingTo: tempURL)
+        defer { try? writer.close() }
 
         for (key, value) in params {
-            body.append(Data("--\(boundary)\r\n".utf8))
-            body.append(Data("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".utf8))
-            body.append(Data("\(value)\r\n".utf8))
+            writer.write(Data("--\(boundary)\r\n".utf8))
+            writer.write(Data("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".utf8))
+            writer.write(Data("\(value)\r\n".utf8))
         }
 
         let filename = fileURL.lastPathComponent
-        let fileData = try Data(contentsOf: fileURL)
-        body.append(Data("--\(boundary)\r\n".utf8))
-        body.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".utf8))
-        body.append(Data("Content-Type: audio/wav\r\n\r\n".utf8))
-        body.append(fileData)
-        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+        writer.write(Data("--\(boundary)\r\n".utf8))
+        writer.write(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".utf8))
+        writer.write(Data("Content-Type: audio/wav\r\n\r\n".utf8))
 
-        request.httpBody = body
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return data
+        let reader = try FileHandle(forReadingFrom: fileURL)
+        defer { try? reader.close() }
+        while true {
+            guard let chunk = try reader.read(upToCount: 1024 * 1024), !chunk.isEmpty else { break }
+            writer.write(chunk)
+        }
+
+        writer.write(Data("\r\n--\(boundary)--\r\n".utf8))
+        return tempURL
     }
 
     /// Returns an `NSDecimalNumber` formatted to `places` decimal places.
@@ -1444,80 +1485,6 @@ final class JobManager: ObservableObject {
         return (bpm, beatCount, resolvedModel)
     }
 
-    /// Generates a 4/4 beat grid from beat.detection.json data.
-    /// Returns (gridPayload, barCount) — gridPayload is empty on parse failure.
-    nonisolated private static func generateBeatGrid(
-        from beatData: Data,
-        bpm: Double?,
-        barAlignmentOffset: Int = 0,
-        beatsPerBar: Int = 4
-    ) -> (payload: [String: Any], barCount: Int) {
-        guard let json = try? JSONSerialization.jsonObject(with: beatData) as? [String: Any],
-              let rawBeats = json["beats"] as? [[String: Any]] else {
-            return ([:], 0)
-        }
-
-        let allBeatTimes = rawBeats.compactMap { $0["time"] as? Double }
-        let bpb          = max(1, beatsPerBar)
-        let offset       = max(0, min(bpb - 1, barAlignmentOffset))
-        var warnings: [String] = []
-
-        if allBeatTimes.count < bpb {
-            warnings.append("Not enough beats for a complete bar.")
-        }
-
-        // Pickup beats are those before the first full bar
-        let pickupTimes = offset > 0 ? Array(allBeatTimes.prefix(offset)) : []
-        let barBeatTimes = Array(allBeatTimes.dropFirst(offset))
-
-        let pickupBeats: [[String: Any]] = pickupTimes.enumerated().map { idx, t in
-            ["beat": idx + 1, "time": jsonDecimal(t, 3)]
-        }
-
-        var bars: [[String: Any]] = []
-        var i = 0
-        while i < barBeatTimes.count {
-            let slice    = barBeatTimes[i ..< min(i + bpb, barBeatTimes.count)]
-            let barBeats = Array(slice)
-            let barStartRaw = barBeats[0]
-            let nextBarStartRaw: Double? = (i + bpb < barBeatTimes.count)
-                ? barBeatTimes[i + bpb]
-                : nil
-            let beatEntries: [[String: Any]] = barBeats.enumerated().map { idx, t in
-                ["beat": idx + 1, "time": jsonDecimal(t, 3)]
-            }
-            let barEndRaw: Double = nextBarStartRaw ?? (barBeats.last ?? barStartRaw)
-            bars.append([
-                "bar":   i / bpb + 1,
-                "start": jsonDecimal(barStartRaw, 3),
-                "end":   jsonDecimal(barEndRaw, 3),
-                "beats": beatEntries,
-            ])
-            i += bpb
-        }
-
-        let timeSig: String
-        switch bpb {
-        case 2: timeSig = "2/4"
-        case 3: timeSig = "3/4"
-        case 6: timeSig = "6/8"
-        default: timeSig = "4/4"
-        }
-
-        let bpmJson: Any = bpm.map { jsonDecimal($0, 2) as NSObject } ?? NSNull()
-        let payload: [String: Any] = [
-            "bpm":                    bpmJson,
-            "beatCount":              allBeatTimes.count,
-            "estimatedTimeSignature": timeSig,
-            "beatsPerBar":            bpb,
-            "barAlignmentOffset":     offset,
-            "pickupBeats":            pickupBeats,
-            "bars":                   bars,
-            "warnings":               warnings,
-        ]
-        return (payload, bars.count)
-    }
-
     nonisolated private static func parseChordResponse(
         _ data: Data
     ) -> (chordCount: Int?, previewChords: [CleanedChord]?, cleanedData: Data?) {
@@ -1565,23 +1532,5 @@ final class JobManager: ObservableObject {
         )
 
         return (chordCount, previewChords.isEmpty ? nil : previewChords, cleanedData)
-    }
-
-    // MARK: - URL cleanup
-
-    /// Strips the `list` query parameter from youtu.be and youtube.com short-link URLs
-    /// so --no-playlist doesn't fail on playlist-appended share links.
-    nonisolated static func cleanYouTubeURL(_ raw: String) -> String {
-        guard var components = URLComponents(string: raw.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            return raw
-        }
-        let isYouTube = components.host?.contains("youtu.be") == true
-            || components.host?.contains("youtube.com") == true
-        guard isYouTube, var items = components.queryItems, !items.isEmpty else {
-            return raw
-        }
-        items.removeAll { $0.name == "list" }
-        components.queryItems = items.isEmpty ? nil : items
-        return components.url?.absoluteString ?? raw
     }
 }

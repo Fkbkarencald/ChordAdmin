@@ -52,7 +52,6 @@ final class StageBeeExportService: ObservableObject {
 
     // MARK: - Private
 
-    private static let backendBase = "http://localhost:5001"
     private let db = Firestore.firestore()
 
     // MARK: - Public API
@@ -102,14 +101,13 @@ final class StageBeeExportService: ObservableObject {
         }
 
         // 1 — Call Python backend for translation ---------------------------------
-        guard let url = URL(string: "\(Self.backendBase)/api/translate-to-stagebee") else {
+        guard let url = URL(string: "\(AppConfig.backendBaseURL)/api/translate-to-stagebee") else {
             throw ExportError.backendUnavailable("Invalid URL")
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 30
 
         // Convert [Int: Int] keys to String for JSON serialisation
         let barSubdivisionsStringKeys = Dictionary(uniqueKeysWithValues:
@@ -121,11 +119,14 @@ final class StageBeeExportService: ObservableObject {
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
+        let session = BackendHTTPClient.session(for: .stageBeeExport)
         let (data, response): (Data, URLResponse)
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await session.data(for: request)
         } catch {
-            throw ExportError.backendUnavailable(error.localizedDescription)
+            throw ExportError.backendUnavailable(
+                BackendHTTPClient.mapURLError(error, operation: "Stage Bee export translation").localizedDescription
+            )
         }
 
         guard let http = response as? HTTPURLResponse else {
