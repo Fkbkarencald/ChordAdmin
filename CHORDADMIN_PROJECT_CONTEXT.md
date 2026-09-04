@@ -4,25 +4,39 @@
 
 ## 1. Project Overview
 
-ChordAdmin is a **native macOS SwiftUI application** (minimum window 1100×520 pt) that takes a YouTube URL as input, downloads the audio, and runs a full audio analysis pipeline to produce a chord chart with section labels.
+ChordAdmin is a **native macOS SwiftUI application** that takes a TheStageBee song with a YouTube
+link, downloads the audio, and runs a full audio analysis pipeline to produce a chord chart with
+section labels which can then be written back to TheStageBee's Firestore `songs` collection.
 
-**App purpose:** Given a YouTube song URL, ChordAdmin produces a bar-by-bar chord chart that a musician can use as a performance reference. It detects tempo, beats, bar boundaries, chords, and repeating song sections.
+**App purpose:** produce a bar-by-bar chord chart a musician can use as a performance reference. It
+detects tempo, beats, bar boundaries, chords and repeating song sections.
 
 **Main user workflow:**
-1. User pastes a YouTube URL into the text field and clicks **Start**.
-2. The app downloads the audio, converts it to mono WAV, runs ffprobe metadata extraction, and analyses audio health — all using local command-line tools.
-3. The app calls a **locally-running Python backend** (port 5001) for beat detection and chord recognition.
-4. All chart generation (beat grid, chord chart draft, performer chart, section candidates, sections) is performed **client-side in Swift**.
-5. Results are displayed in a three-pane layout: left (job info/metadata), centre (chord chart + waveform), right (collapsible log).
-6. The user can adjust the bar alignment offset (0–3), toggle half-tempo mode, and interactively edit section boundaries.
+1. The library sidebar lists every TheStageBee song with its state — not analysed, analysed, edited,
+   exported — plus filters and search.
+2. Selecting a song opens the workspace: transport, waveform overview and the chord chart.
+   With nothing selected the window shows a launch dashboard (continue where you left off, analyse
+   new songs as a queue, recent exports, environment readiness).
+3. Analysis runs as an 11-stage pipeline, reported as a per-stage checklist with timings, warnings,
+   retry and cancel.
+4. The user corrects beat alignment in the Tuning inspector (pickup offset, beats per bar, halved
+   tempo, manual BPM) — previewed live in memory, applied explicitly.
+5. Sections are edited on the chart itself, anchored to the selected bar (split / merge / rename,
+   with S / M / R shortcuts scoped to chart focus).
+6. Export shows a confirmation sheet with the tempo and section diff before it overwrites the
+   Firestore document.
 
-**Platform:** macOS only — uses `NSWorkspace`, `NSPasteboard`, `NSColor`, `AVAudioPlayer`, and `AVAudioFile`.
+**Platform:** macOS only — uses `NSWorkspace`, `NSPasteboard`, `NSColor`, `AVAudioPlayer`, `AVAudioFile`.
 
-**Local backend:** Yes. A local Python server at `http://localhost:5001` is required for beat detection and chord recognition. If unavailable, the job completes with warnings and no chord/beat data is produced.
+**Local backend:** required. A local Python server at `http://localhost:5051` performs beat detection,
+chord recognition and the StageBee translation. If it is unreachable the job stops at
+`.audioReady` — a resumable pause, not a terminal state, and no audio is downloaded twice.
 
-**Local files:** Each analysis job writes files to `~/Library/Application Support/ChordAdmin/jobs/<UUID>/`. A URL cache at `~/Library/Application Support/ChordAdmin/url_cache.json` maps previously-analysed URLs to their job folders, enabling instant replay.
+**Local files:** each job writes to `~/Library/Application Support/ChordAdmin/jobs/<UUID>/`. Jobs are
+keyed by the song's Firestore document ID, stamped into `job.json`.
 
 ---
+
 
 ## 2. Project Structure
 
@@ -30,31 +44,45 @@ ChordAdmin is a **native macOS SwiftUI application** (minimum window 1100×520 p
 ChordAdmin/
 ├── ChordAdmin/
 │   ├── ChordAdminApp.swift          ← App entry point
-│   ├── ContentView.swift            ← Entire UI (~1 200 lines)
-│   ├── JobManager.swift             ← Core pipeline orchestrator (~1 500 lines)
-│   ├── AnalysisJob.swift            ← All data models and enums
-│   ├── LocalFileStore.swift         ← File I/O helpers
-│   ├── ProcessRunner.swift          ← Async subprocess wrapper
-│   ├── SectionStore.swift           ← Section state management
-│   └── ToolChecker.swift            ← CLI tool availability check
+│   ├── AppTermination.swift         ← Quit handling: settles an in-flight re-analysis, warns mid-run
+│   │   — Models and services —
+│   ├── AnalysisJob.swift            ← Job record, statuses, chart/section value types
+│   ├── PipelineStage.swift          ← The 11 stages, per-stage state, StageReport
+│   ├── JobManager.swift             ← Per-song orchestration, queue, cancel, resume, retry
+│   ├── ChartGeneration.swift        ← Pure transforms (beat grid, charts, section candidates)
+│   ├── ChartNavigation.swift        ← Where each arrow key lands in the ragged bar grid
+│   ├── SectionStore.swift           ← Section state and persistence
+│   ├── StageBeeExportService.swift  ← Export preview (diff) and commit
+│   ├── FirebaseSongStore.swift      ← Firestore song list
+│   ├── FirebaseSong.swift           ← Song document model
+│   ├── AuthStore.swift              ← Sign in with Apple → Firebase Auth
+│   ├── EnvironmentStore.swift       ← Tool + backend readiness
+│   ├── ToolChecker.swift            ← PATH-aware tool resolution and versions
+│   ├── ProcessRunner.swift          ← Async subprocess wrapper with cancellation
+│   ├── LocalFileStore.swift         ← Job folder I/O, URL cache
+│   ├── Library.swift                ← Song work state, filters, library rows
+│   │   — UI —
+│   ├── ContentView.swift            ← Root: split view, toolbar, sheets, state wiring
+│   ├── LibrarySidebar.swift         ← Song list, filters, environment footer
+│   ├── FrontScreenView.swift        ← Launch dashboard (no selection)
+│   ├── SongWorkspaceView.swift      ← Transport, waveform, chart host
+│   ├── WaveformView.swift           ← Canvas waveform with section band and chord lane
+│   ├── ChordChartView.swift         ← Sectioned bar grid and bar-anchored actions
+│   ├── InspectorView.swift          ← Bar / Tuning / Analysis / Info tabs
+│   ├── ExportSheet.swift            ← Export confirmation with diff
+│   ├── AudioPlayback.swift          ← Player and waveform sample loader
+│   ├── DesignKit.swift              ← Shared UI atoms
+│   └── WorkspaceState.swift         ← Inspector tab, tuning draft, formatting
 ├── CHORDADMIN_PROJECT_CONTEXT.md    ← This file
+├── design/                          ← Redesign artboards + build.py generator
 └── ChordAdmin.xcodeproj/
 ```
 
-### File-by-file breakdown
-
-| File | What it does | Why it matters |
-|---|---|---|
-| `ChordAdminApp.swift` | `@main` entry, creates a `WindowGroup` with `ContentView` | App lifecycle entry point |
-| `ContentView.swift` | Full UI: URL input, three-pane bento layout, waveform viewer, chord chart, log panel, audio playback, section editing | All user interaction happens here |
-| `JobManager.swift` | `@MainActor ObservableObject`; orchestrates the entire pipeline from URL input through download → convert → health → backend calls → chart generation | Heart of the app — contains all business logic |
-| `AnalysisJob.swift` | `AnalysisJob` struct + all supporting types (`JobStatus`, `CleanedChord`, `ChordChartBarEntry`, `PerformerChartBarEntry`, `SectionCandidate`, etc.) | Data contract between pipeline, storage, and UI |
-| `LocalFileStore.swift` | Creates job folders, writes `job.json`, appends `logs.txt`, manages `url_cache.json` | All filesystem operations |
-| `ProcessRunner.swift` | Wraps `Foundation.Process` in `async/await` with streaming stdout+stderr | Used to run yt-dlp, ffmpeg, ffprobe |
-| `SectionStore.swift` | `@MainActor ObservableObject`; loads, persists, splits, merges, and renames sections | Drives section-editing UI in chord chart pane |
-| `ToolChecker.swift` | Probes `/opt/homebrew/bin/{yt-dlp,ffmpeg,ffprobe,deno}` with `--version` | Guards the pipeline before any download attempt |
+The Xcode project uses a file-system-synchronised group (`objectVersion = 77`), so files added to
+`ChordAdmin/` are picked up without editing `project.pbxproj`.
 
 ---
+
 
 ## 3. Current Audio Processing Flow
 
@@ -95,12 +123,12 @@ ffmpeg volumedetect + silencedetect on analysis.wav
   → populates job: meanVolumeDb, maxVolumeDb, silenceRegionCount, totalSilenceDurationSeconds
 ↓
 status = .checkingAnalysisBackend
-GET http://localhost:5001/health
+GET http://localhost:5051/health
   → if 404 / error: job.status = .completedWithWarnings  ← pipeline ends here without charts
   → if 200: continue
 ↓
 status = .detectingBeats
-POST http://localhost:5001/api/detect-beats  (multipart; file=analysis.wav, model=auto)
+POST http://localhost:5051/api/detect-beats  (multipart; file=analysis.wav, model=auto)
   → writes beat.detection.json
   → populates job: bpm, beatCount, resolvedBeatModel
 ↓
@@ -110,7 +138,7 @@ generateBeatGrid(from: beat.detection.json, bpm:, barAlignmentOffset: 0)
   → populates job: beatGridPath, barCount, estimatedTimeSignature
 ↓
 status = .recognizingChords
-POST http://localhost:5001/api/recognize-chords  (multipart; file=analysis.wav, model=chord-cnn-lstm)
+POST http://localhost:5051/api/recognize-chords  (multipart; file=analysis.wav, model=chord-cnn-lstm)
   → writes chord.recognition.json
   → writes chord.cleaned.json  (normalised chord list with displayChord)
   → populates job: chordCount, chordPreview, chordRecognitionPath, chordCleanedPath
@@ -183,13 +211,13 @@ All files live in:
 
 The backend is expected to run **locally** on the same machine as the app.
 
-**Base URL (hardcoded):** `http://localhost:5001`  
-Location: `JobManager.swift`, line with `private static let backendBaseUrl = "http://localhost:5001"`
+**Base URL (hardcoded):** `http://localhost:5051`  
+Location: `JobManager.swift`, line with `private static let backendBaseUrl = "http://localhost:5051"`
 
 ### Health check
 
 ```
-GET http://localhost:5001/health
+GET http://localhost:5051/health
 ```
 - Expected response: HTTP 200 (any body)
 - If anything other than 200: job is marked `.completedWithWarnings` and the pipeline stops without charts.
@@ -197,7 +225,7 @@ GET http://localhost:5001/health
 ### Beat detection
 
 ```
-POST http://localhost:5001/api/detect-beats
+POST http://localhost:5051/api/detect-beats
 Content-Type: multipart/form-data
 
 Fields:
@@ -219,7 +247,7 @@ Parsed by `JobManager.parseBeatResponse`. The `cached` flag is shown in the log.
 ### Chord recognition
 
 ```
-POST http://localhost:5001/api/recognize-chords
+POST http://localhost:5051/api/recognize-chords
 Content-Type: multipart/form-data
 
 Fields:
@@ -292,10 +320,12 @@ Key properties:
 | `chordChartPreview` | `[ChordChartBarEntry]?` | In-memory preview for UI |
 | `performerChartPreview` | `[PerformerChartBarEntry]?` | In-memory preview for UI |
 | `sectionCandidatePreview` | `[SectionCandidate]?` | In-memory preview for UI |
-| `errorMessage` | `String?` | Last error description |
+| `errorMessage` | `String?` | Last error description; only set on a job that actually failed |
+| `notice` | `String?` | Something to tell the user about an otherwise healthy job — set when a rolled-back re-analysis put the previous one back |
 | `barAlignmentOffset` | `Int?` | 0–3 beat pickup offset |
 | `tempoHalved` | `Bool?` | Whether tempo-halving is active |
-| `chartsVersion` | `Int?` | Incremented on each chart regeneration to trigger UI reload |
+| `barsWithoutChords` | `Int?` | Chordless bars across the whole chart (the preview holds only eight) |
+| `chartsVersion` | `Int?` | Bumped inside `buildCharts`, the one place the chart files are written, so it covers a first run, a resume, a retry and a re-tune alike. `ContentView.workspaceKey` reloads on it. |
 
 ### `JobStatus`
 `enum JobStatus: String, Codable, Sendable`  
@@ -345,125 +375,76 @@ Cases: `missingTools([String])`, `downloadFailed(String)`, `conversionFailed(Str
 
 ## 7. UI Screens and User Actions
 
-All UI is in a single file: `ChordAdmin/ContentView.swift`.
+One window, three columns: library sidebar, workspace, inspector.
 
-### Main window — `ContentView`
+### Root — `ContentView`
+`NavigationSplitView` with the library as sidebar and, in the detail column, either the workspace
+(a song is selected) or the front screen. The inspector is a trailing `.inspector` panel. Owns
+`JobManager`, `FirebaseSongStore`, `AuthStore`, `EnvironmentStore`, `StageBeeExportService`,
+`SectionStore`, `ChordAudioPlayer` and `WaveformLoader`, and hosts the export and rename sheets.
 
-**Purpose:** The only window. Hosts the URL input and the three-pane bento layout.
+### `LibrarySidebar`
+Search, filter chips (All / New / Analysed / Edited / Exported) with counts, and a row per song
+showing thumbnail, title, secondary line and a state icon. Songs without a usable YouTube link stay
+listed but dimmed. The footer shows backend reachability, tool status and the signed-in account, and
+re-checks the environment on click.
 
-**State:**
-- `@StateObject jobManager: JobManager` — job state and pipeline control
-- `@State urlInput: String` — URL text field
-- `@State logCollapsed: Bool` — log pane toggle
+### `FrontScreenView`
+Shown when nothing is selected: "Continue" cards for edited/analysed/paused songs, a grid of
+not-yet-analysed songs with per-song Analyse and an "Analyse all" that fills the queue, recent
+exports, and an environment readiness card.
 
-**Actions:**
-- **Start** button → `Task { await jobManager.startJob(url: urlInput) }`
-- **Copy** (log) → `NSPasteboard.general.setString(jobManager.logOutput)`
-- **Collapse/Expand log** → `logCollapsed` toggle
-
-**Left pane** (`width: 280`): `BentoSection` cards for Status, Files, Metadata, Audio Health, Backend  
-**Middle pane** (flexible): `ChordChartModeSwitcher` — only visible when `chordChartPreview` or `chordChartSimplePreview` or `chordChartSimplePath` is non-nil  
-**Right pane** (flexible, collapsible): Log output with auto-scroll
-
----
-
-### `StatusBadge`
-Displays `job.status.displayName` as a coloured capsule pill. Colour per status defined in switch.
-
----
-
-### `PathRow`
-Displays a labelled file path with **Reveal** (Finder) and optionally **Play** (NSWorkspace open) buttons.
-
----
-
-### `MetadataPanel`
-Grid of: duration, sample rate, channels, codec, bit rate, file size — read from `AnalysisJob`.
-
----
-
-### `AudioHealthPanel`
-Grid of: mean/max volume dB, silence region count, total silence duration. Re-derives warnings from `AnalysisJob` fields (does not read `audio.health.json`).
-
----
-
-### `BackendPanel`
-Displays backend availability status, paths to beat/chord JSON files, chord preview list, section candidates preview, and analysis stats (BPM, beat count, bar count, chord count, models). Reads from `AnalysisJob`.
-
----
-
-### `ChordChartModeSwitcher` (middle pane)
-**Purpose:** Interactive chord chart display with audio playback, waveform, and section editing.
-
-**State objects:**
-- `@StateObject audioPlayer: ChordAudioPlayer` — AVAudioPlayer wrapper
-- `@StateObject waveformLoader: WaveformLoader` — AVAudioFile sample extractor
-- `@StateObject sectionStore: SectionStore` — section editing
-- `@State localOffset: Int` — bar alignment offset
-
-**Actions:**
-- **Play/Pause** → `audioPlayer.togglePlayPause()`
-- **Bar offset buttons (0–3)** → `jobManager.regenerateCharts(offset: i)`
-- **½ BPM toggle** → `jobManager.halveTempo(!isHalved)`
-- **Waveform zoom** → `waveZoom` state
-- **Follow playhead toggle** → `waveFollowPlayhead`
-- **Waveform seek** → `audioPlayer.seek(to:)`
-
-**Loads on `task(id:)` change (new job or `chartsVersion` bump):**
-- Performer chart bars from `chord.chart.performer.json`
-- Draft chart bars from `chord.chart.draft.json`
-- Raw chords from `chord.cleaned.json`
-- Sections via `sectionStore.load(for:jobFolder:)`
-- Audio via `audioPlayer.load(path:)` + `waveformLoader.load(path:)`
-
----
+### `SongWorkspaceView`
+Transport (play/pause, clock, BPM/time-signature/bar/section pills, waveform zoom, follow toggle),
+then either the waveform or a status strip (running with cancel, audio-ready with resume, failed,
+or not analysed), then the chart. A skeleton chart renders while a job runs so the layout never jumps.
 
 ### `WaveformView`
-Canvas-drawn waveform. Draws: background, alternating bar shading, bar boundary lines, amplitude bars, raw chord overlay (cyan/mint with labels), red playhead. Handles `DragGesture` for seek.
+Canvas: section colour band, bar grid with numbers, waveform, detected-chord lane, playhead. Drag to
+scrub. Theme-aware (the previous version painted a hardcoded black background in light mode).
+
+### `ChordChartView`
+Bars grouped by section, four per row. Each bar is split into chord segments whose widths are
+proportional to how long each chord sounds, using the per-bar subdivision. Selecting a bar seeks and
+opens an action popover (Split / Merge / Rename with S / M / R hints, plus a Subdivide picker).
+Keys are handled with focus-scoped `.onKeyPress`, so they cannot swallow typing elsewhere.
+
+### `InspectorView`
+- **Bar** — selected bar, its section and position, detected chords with their share of the bar,
+  subdivision, and the section actions.
+- **Tuning** — detected/override BPM, halve tempo, pickup offset, beats per bar, Apply/Revert while a
+  preview is pending, and beat re-detection with BPM-range and stable-tempo options.
+- **Analysis** — the stage checklist with timings and messages, retry on the failing stage, resume
+  when the backend was down, cancel while running, and the raw log behind a disclosure.
+- **Info** — file metadata, audio health with warnings, analysis stats, environment readiness with
+  per-tool paths and versions, and Reveal in Finder.
+
+### `ExportSheet`
+Target song and document ID, the tempo change, the current versus new section list, backend and
+account status, and an explicit "Overwrite …" confirm.
 
 ---
 
-### `ChordProgressionView` (defined in ContentView.swift, not shown in excerpt)
-Displays the performer chart bars grouped by section. Allows section split/merge/rename. Reads `sectionStore.sections`. Calls `sectionStore.startNewSection`, `mergeSectionWithPrevious`, `rename`. Calls `onSeek` to seek audio on bar tap.
-
----
-
-### `ChordAudioPlayer`
-`@MainActor` `NSObject` wrapping `AVAudioPlayer`. Published: `currentTime`, `isPlaying`, `duration`, `isLoaded`. 0.1 s update timer. Implements `AVAudioPlayerDelegate` to reset at end.
-
----
-
-### `WaveformLoader`
-`@MainActor` `ObservableObject`. Loads audio via `AVAudioFile` in a detached `Task`, extracts 1 800 peak-amplitude samples for waveform rendering.
-
----
-
-### `SectionStore` (SectionStore.swift)
-`@MainActor` `ObservableObject`. Manages `[ChordSection]`. On `load(for:jobFolder:)`:
-- Reads `sections.json`; skips if it's a single section covering all bars (treats as default)
-- Falls back to building sections from `section.candidates.json`
-- Falls back to a single "Intro" section
-
-Persists to `sections.json` after every mutation.
-
----
 
 ## 8. Configuration and Environment
 
-### Hardcoded values
+### Defaults
 
 | Value | Location | Purpose |
 |---|---|---|
-| `"http://localhost:5001"` | `JobManager.swift`, `private static let backendBaseUrl` | Local backend base URL |
-| `"auto"` | `JobManager.swift`, `private static let defaultBeatModel` | Beat detection model name |
-| `"chord-cnn-lstm"` | `JobManager.swift`, `private static let defaultChordModel` | Chord recognition model name |
-| `"/opt/homebrew/bin/yt-dlp"` | `ToolChecker.swift` | yt-dlp path (Homebrew Apple Silicon) |
-| `"/opt/homebrew/bin/ffmpeg"` | `ToolChecker.swift` | ffmpeg path |
-| `"/opt/homebrew/bin/ffprobe"` | `ToolChecker.swift` | ffprobe path |
-| `"/opt/homebrew/bin/deno"` | `ToolChecker.swift` | deno path (yt-dlp JS runtime) |
+| `"http://localhost:5051"` | `JobManager.backendBaseUrl` | Analysis backend, overridable (below). Both the pipeline and the export read this one property. |
+| `"auto"` | `JobManager.defaultBeatModel` | Beat detection model name |
+| `"chord-cnn-lstm"` | `JobManager.defaultChordModel` | Chord recognition model name |
+| `/opt/homebrew/bin`, `/usr/local/bin`, `/opt/local/bin`, `/usr/bin`, `/bin` + `$PATH` | `ToolChecker.searchDirectories` | Where the tools are looked for. The previous build only searched Apple-silicon Homebrew, so every tool read as missing on an Intel Mac. |
 
 ### Environment variables
-None. No `ProcessInfo.processInfo.environment` lookups anywhere in the codebase.
+
+| Variable | Read by | Purpose |
+|---|---|---|
+| `CHORDADMIN_BACKEND_URL` | `JobManager.backendBaseUrl` | Points the app at another analysis backend, matching ChordAdminBackend's own `CHORDADMIN_BACKEND_PORT`. |
+| `CHORDADMIN_JOBS_DIR` | `LocalFileStore.supportDirectory` | Redirects job folders and the URL cache. Used by `Tools/verify.sh` so tests never touch real data. |
+
+Both are read once at first use, so they must be set before launch (Xcode: Edit Scheme → Run → Environment Variables).
 
 ### Plist / config files
 None beyond the standard Xcode-generated `Info.plist` inside the `.xcodeproj`.
@@ -477,7 +458,7 @@ The natural location is in `JobManager.swift`, alongside the existing static con
 
 ```swift
 // JobManager.swift — MARK: Backend config
-private static let backendBaseUrl    = "http://localhost:5001"
+private static let backendBaseUrl    = "http://localhost:5051"
 private static let defaultBeatModel  = "auto"
 private static let defaultChordModel = "chord-cnn-lstm"
 
@@ -493,32 +474,28 @@ This makes `lalalLicenseKey` `nil` when unset (standard Swift optional), and rea
 
 ## 9. Error Handling and Logging
 
-### Log writing
-- **In-memory:** `JobManager.logOutput: String` — appended via `log(_ text: String)`. Displayed in real-time in the right-pane `ScrollView`, auto-scrolling on change.
-- **On-disk:** `LocalFileStore.appendLog` writes the same text to `logs.txt` in the job folder using `FileHandle.seekToEndOfFile`. Written after every `log()` call.
+### Stage-level reporting
+Every stage ends in an explicit state — `done`, `warning(String)`, `skipped(String)` or
+`failed(String)` — stored on the job as `stages: [StageRecord]` and shown as a checklist. A job that
+produced no chart can no longer present itself as a plain success.
 
-### Log visibility
-The log pane in the UI is always present (collapsible). A **Copy** button copies the full log to the clipboard.
+### Failure behaviour
+- A thrown error fails **that stage** and stops the run, with the message on the stage row.
+- `retry(from:)` resets that stage and everything after it and re-runs; stages before it keep their
+  results, and anything from `.backend` onwards reuses the audio already on disk.
+- Backend unreachable → `status = .audioReady`, later stages `skipped`, and a "Resume analysis"
+  action. Nothing is re-downloaded.
+- Non-2xx backend replies raise `JobError.backendRejected` instead of being written to the job folder
+  as if they were results.
+- Cancellation terminates the subprocess and cancels the request, keeping finished stages.
+- An interrupted job found at launch is repaired during `hydrate()` rather than showing as running.
 
-### Failed jobs
-- Fatal errors (yt-dlp, ffmpeg, ffprobe, tool check) throw `JobError`, caught in `startJob`'s `catch` block: `job.status = .failed`, `job.errorMessage = error.localizedDescription`, persisted to `job.json`.
-- `job.errorMessage` is shown below the `StatusBadge` in red.
-
-### Backend failures
-- Backend unavailable → `job.status = .completedWithWarnings`, `job.backendErrorMessage` set, shown in `BackendPanel` with a warning icon.
-- Beat detection fails → logged as `"Beat detection failed: …"`, pipeline continues to chord recognition (non-fatal, no `JobError` thrown).
-- Chord recognition fails → logged as `"Chord recognition failed: …"`, pipeline continues to chart generation (non-fatal).
-
-### Audio conversion failures
-- Thrown as `JobError.conversionFailed` → job status = `.failed`.
-
-### Audio health warnings
-Derived from `AnalysisJob` fields at display time (`AudioHealthPanel.derivedWarnings`):
-- `maxVolumeDb > -0.5 dB` → "Possible clipping or very hot master"
-- `meanVolumeDb < -35 dB` → "Very quiet audio"
-- `totalSilence / duration > 0.2` → "Large silent sections detected"
+### Logging
+`JobManager.logs[songID]` holds the per-song log, mirrored to `logs.txt` in the job folder. The log is
+secondary: it lives behind a disclosure in the Analysis tab, with a Copy button.
 
 ---
+
 
 ## 10. Best Integration Point for LALAL.AI
 
@@ -593,52 +570,80 @@ Only `wavURL` needs to change. Both `postAudioFile` calls use it. Nothing downst
 
 | Risk | Severity | Location | Detail |
 |---|---|---|---|
-| No URLSession timeout | High | `JobManager.postAudioFile`, `checkBackendHealth` | `URLSession.shared.data(for:)` with no timeout policy. If backend hangs, the app hangs indefinitely with no user-visible indication. |
-| Entire WAV loaded into RAM | High | `JobManager.postAudioFile` | `let fileData = try Data(contentsOf: fileURL)` reads the full WAV before upload. A 10-min 44.1 kHz mono WAV ≈ 50 MB. Long tracks risk high memory pressure. |
-| Hardcoded Homebrew paths | Medium | `ToolChecker.swift` | `/opt/homebrew/bin/` is correct for Apple Silicon Homebrew only. Intel Macs use `/usr/local/bin/`. The app will report all tools missing on Intel. |
-| No retry logic | Medium | `JobManager` backend calls | One network error aborts the step with a log message. Transient backend errors are permanent failures. |
-| ProcessRunner merges stdout+stderr | Medium | `ProcessRunner.swift` | Both pipes feed into `accumulated`. ffprobe relies on `-v quiet` to suppress stderr — if ffprobe emits any stderr, the JSON parse of `metaResult.output` will fail. |
-| `generateBeatGrid` always assumes 4/4 | Medium | `JobManager.generateBeatGrid` | `beatsPerBar = 4` is hardcoded. The backend may return and the file stores `estimatedTimeSignature` but the grid builder ignores it. Songs in 3/4, 6/8, or 5/4 will produce misaligned bars. |
-| URL cache has no expiry | Low | `LocalFileStore` | Cache entries are evicted only if `analysis.wav` or `job.json` are missing. A completed job with stale chord data (e.g. after a model upgrade) will always be served from cache. |
-| `chord.chart.simple.json` is never generated | Low | `JobManager.swift` / `AnalysisJob.swift` | `chordChartSimplePath`, `chordChartSimpleBarCount`, `chordChartSimplePreview`, and the `generatingSimpleChart` status exist but are never written. The middle pane condition checks `chordChartSimplePath` — it will never be true. This is dead code. |
-| No test suite | Low | Entire project | Zero unit or integration tests. Pipeline correctness is entirely manual. |
-| Backend API contract is implicit | Low | `JobManager` response parsers | The expected JSON shapes are inferred from `parseBeatResponse` and `parseChordResponse` only. No schema, no OpenAPI spec in this repo. |
-| `SectionStore.load` is synchronous on MainActor | Low | `SectionStore.swift` | Reads `sections.json` and `section.candidates.json` synchronously on the main thread. For very large charts this could cause a frame drop. |
-| No `ASSUMPTION` — backend `cached` flag | Informational | `JobManager` | The backend can return `"cached": true`. The app logs this but does not expose any cache-invalidation mechanism. |
+| `generateBeatGrid` assumes a fixed beats-per-bar | Medium | `ChartGeneration.generateBeatGrid` | The user can override 2/3/4 per bar, but `estimatedTimeSignature` from the backend is still not used to pick a default. |
+| Trailing partial bar | Low | `ChartGeneration.generateBeatGrid` | With a pickup offset the final bar can hold fewer beats than a full bar; it is charted anyway. |
+| URL cache has no expiry | Low | `LocalFileStore` | Entries are only evicted when files vanish; a job with stale chord data is still reused. Re-analyse forces a fresh run. |
+| Job folders are never pruned | Low | `LocalFileStore` | Audio and WAVs accumulate; there is no size cap or cleanup command. |
+| No test target | Low | project | There is no XCTest target; pipeline logic is covered by an ad-hoc harness, not by CI. |
+| Backend API contract is implicit | Low | `JobManager` parsers | Shapes are inferred from the parsers; no schema is checked in. |
+| Export translation is trusted | Low | `StageBeeExportService` | The section payload is summarised for the diff but not schema-validated before writing. |
+
+### Fixed in the redesign
+- Job state is keyed by song document ID, and export refuses a job/song mismatch — the previous
+  build could write one song's analysis onto another song's document.
+- Backend calls validate HTTP status, have timeouts, and stream the upload from disk instead of
+  holding the whole WAV in memory.
+- Runs can be cancelled; a hung tool or request no longer wedges the app.
+- Tools resolve through a search path (including Intel Homebrew) and are checked at launch.
+- `sections.json` is no longer discarded when it holds a single section covering every bar.
+- Section save failures surface instead of being swallowed.
 
 ---
 
-## 12. Compact Summary for ChatGPT
 
-### ChordAdmin Context Summary
+## 12. Compact Summary
 
-**ChordAdmin is** a native macOS SwiftUI app (macOS only, single window) that downloads a YouTube song, runs audio analysis, and produces a bar-by-bar chord chart with section labels. It is a developer/musician tool, not a consumer app.
+**ChordAdmin is** a native macOS SwiftUI app (single window, three columns) that downloads a YouTube
+song, runs audio analysis, and produces a bar-by-bar chord chart with section labels which it can
+write back to TheStageBee's Firestore `songs` collection. It is a developer/musician tool.
 
-**The main workflow is:**
-1. User pastes a YouTube URL and clicks Start.
-2. App downloads audio with yt-dlp, converts to mono 44.1 kHz WAV with ffmpeg.
-3. App extracts metadata with ffprobe and runs audio health checks.
-4. App checks a locally-running Python backend at `http://localhost:5001`.
-5. Backend performs beat detection (`/api/detect-beats`) and chord recognition (`/api/recognize-chords`) — both receive `analysis.wav` as a multipart upload.
-6. All chart generation (beat grid, chord chart draft, performer chart, section candidates, sections) is done client-side in Swift.
-7. Results display in a three-pane layout: job info left, chord chart + waveform centre, log right.
+**The workflow is:** pick a song in the library → analyse (11-stage pipeline, shown as a checklist) →
+correct beat alignment with a live preview → edit sections on the chart → export behind a
+confirmation sheet that shows the diff.
 
-**Important files are:**
-- `ChordAdmin/JobManager.swift` — pipeline orchestrator, all business logic, backend calls, chart generation (~1 500 lines)
-- `ChordAdmin/AnalysisJob.swift` — all Swift data models (`AnalysisJob`, `JobStatus`, `CleanedChord`, `ChordChartBarEntry`, `PerformerChartBarEntry`, `SectionCandidate`, etc.)
-- `ChordAdmin/ContentView.swift` — entire UI including waveform, chord chart, audio player, section editor (~1 200 lines)
-- `ChordAdmin/LocalFileStore.swift` — job folder I/O, URL cache
-- `ChordAdmin/ToolChecker.swift` — checks for yt-dlp, ffmpeg, ffprobe, deno at `/opt/homebrew/bin/`
-- `ChordAdmin/ProcessRunner.swift` — async subprocess wrapper
-- `ChordAdmin/SectionStore.swift` — section state and persistence
+**Job state** is keyed by the song's Firestore document ID. `AnalysisJob` carries `songDocumentID`,
+`stages`, `barSubdivisions`, `lastEditedAt` and `lastExport`; older `job.json` files still decode,
+and jobs predating per-song keying are adopted by YouTube video ID.
 
-**The current audio pipeline is:**
-URL → yt-dlp download → ffmpeg → `analysis.wav` (mono, 44.1 kHz) → ffprobe metadata → audio health → `POST /api/detect-beats` → `beat.detection.json` → beat grid (client) → `POST /api/recognize-chords` → `chord.cleaned.json` → chord chart draft (client) → performer chart (client) → section candidates (client) → sections (client).
+**The pipeline is:** yt-dlp download → ffmpeg WAV → ffprobe metadata → audio health → backend health
+→ `POST /api/detect-beats` → beat grid (local) → `POST /api/recognize-chords` → chord chart draft
+(local) → performer chart (local) → section candidates and sections (local).
 
-**The job folder contains** (at `~/Library/Application Support/ChordAdmin/jobs/<UUID>/`): `source.info.json`, `audio.original.<ext>`, `analysis.wav`, `metadata.json`, `audio.health.json`, `job.json`, `logs.txt`, `beat.detection.json`, `beat.grid.json`, `chord.recognition.json`, `chord.cleaned.json`, `chord.chart.draft.json`, `chart.config.json`, `chord.chart.performer.json`, `section.candidates.json`, `sections.json`.
+**Export** posts the job folder to `POST /api/translate-to-stagebee`, previews the resulting tempo
+and sections against the current document, and only then calls `updateData` on `songs/<id>`.
 
-**The backend integration works by** making two multipart `POST` requests from `JobManager.postAudioFile` — one to `/api/detect-beats` (model: `"auto"`) and one to `/api/recognize-chords` (model: `"chord-cnn-lstm"`) — each sending the full `analysis.wav` binary. The base URL `http://localhost:5001` is hardcoded in `JobManager.swift`. No timeout, no retry. The backend is expected to run locally.
+**On quit** `ChordAdminAppDelegate.applicationShouldTerminate` warns while a run is in flight, then calls
+`JobManager.settleForTermination()` so the supersede decision is resolved on disk rather than left for the
+next launch to infer. Hydration still defends itself: it prefers the more complete analysis over the newer
+one, and sets aside — rather than sweeps — a losing folder that holds a chart.
 
-**The best place to add LALAL.AI is** in `JobManager.startJob(url:)`, immediately after `analysis.wav` is written and `job.analysisWavPath` is set, and before the `let wavURL = URL(fileURLWithPath: wavPath)` line that feeds both backend calls. The pattern would be: if `LALAL_LICENSE_KEY` env var is set, upload `analysis.wav` to LALAL.AI, save the returned `instrumental.wav` to the job folder, and set `wavURL` to point to `instrumental.wav` instead. The `LALAL_LICENSE_KEY` should be read via `ProcessInfo.processInfo.environment["LALAL_LICENSE_KEY"]` and stored as `private static let lalalLicenseKey: String?` alongside the existing `backendBaseUrl` constant.
+**Section detection** turns *every* occurrence of a repeated passage into its own section, with the
+repeats sharing the first one's name; "Intro"/"Outro" are reserved for material that does not recur.
+Candidates whose first occurrence overlaps an accepted one are suppressed, so a song built on a single
+loop no longer reports the same phrase once per rotation.
 
-**Known risks/unknowns are:** no URLSession timeout (backend hang = app hang), entire WAV loaded into RAM for upload (large file risk), all tool paths hardcoded to `/opt/homebrew/bin/` (Intel Mac incompatible), no retry on backend errors, `generateBeatGrid` always assumes 4/4 time, URL cache has no expiry, `chord.chart.simple.json` path is dead code (never generated), no test suite, backend API contract is implicit (inferred from parsers only).
+**Accessibility.** Chart bars are single elements with spoken labels (number, chords, section,
+subdivision, playing/changed state) and a select action; the waveform is one adjustable element that
+scrubs a bar at a time; runs announce their progress and outcome. Decorative artwork, key caps and
+status dots are hidden from the tree, and the states they carried are said in the labels beside them.
+**Type scales — but the app does the scaling itself.** macOS has no Dynamic Type: `@ScaledMetric` and
+`.dynamicTypeSize()` compile and do nothing. Measured directly (`Tools/` probe, every size including
+`.accessibility3`): `@ScaledMetric` returns the base value unchanged. So `DesignKit` carries a
+`chordAdminTextScale` environment value and `TextScale.scaled(_:style:by:)` multiplies the point size;
+`.scaledFont(size:weight:design:relativeTo:)` is the single call site for all ~180 fonts, and the three
+Canvas labels (which take a `Font` value, not a modifier) go through the same function.
+`TextSizeSetting` (`AppCommands.swift`) holds the multipliers, the View menu offers ⌘+ / ⌘- / ⌘0, and
+`ContentView` applies it. `style` sets how strongly each size responds — small print gains more than
+headings — with the emphases tuned so the ladder never collides: a test walks the app's real ladder at
+every step and fails on any pair that meets or inverts. `type-scale.png` shows it.
+
+**Note on the render harness:** it does NOT honour `.dynamicTypeSize()` — a plain `.font(.body)` renders
+identically at `.large` and `.xxxLarge`. That is why the scaling had to be app-applied to be
+verifiable at all. The end-to-end path is checked by rendering the real `ContentView` twice with
+different values written to the `textSize` default (`contentview-scale-small/large.png`), which
+exercises `@AppStorage` → `chordAdminTextScale` → every font. That check is what caught the sidebar's
+empty-state message truncating: a `.sidebar` List row clips its content to one line however the width
+is proposed, so the placeholder is an overlay on the List rather than a row in it.
+
+**Known limits:** no XCTest target, no job-folder pruning, the beat grid does not auto-select a time
+signature, and the translated export payload is not schema-validated.

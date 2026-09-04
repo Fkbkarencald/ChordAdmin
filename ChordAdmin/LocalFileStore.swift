@@ -2,68 +2,24 @@ import Foundation
 
 struct LocalFileStore {
 
-    static let baseDirectory: URL = {
+    /// Root for job folders and the URL cache.
+    ///
+    /// `CHORDADMIN_JOBS_DIR` redirects it, so tests and the render harness can
+    /// work against a throwaway directory instead of the real
+    /// `~/Library/Application Support/ChordAdmin` data.
+    static let supportDirectory: URL = {
+        if let override = ProcessInfo.processInfo.environment["CHORDADMIN_JOBS_DIR"],
+           !override.isEmpty {
+            return URL(fileURLWithPath: override, isDirectory: true)
+        }
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first!
-        return appSupport.appendingPathComponent("ChordAdmin/jobs", isDirectory: true)
+        return appSupport.appendingPathComponent("ChordAdmin", isDirectory: true)
     }()
 
-    private static let urlCacheFile: URL = {
-        let appSupport = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first!
-        return appSupport.appendingPathComponent("ChordAdmin/url_cache.json")
-    }()
-
-    // MARK: - URL cache
-
-    /// Returns the job folder URL for `url` if the folder contains a completed job,
-    /// or `nil` if there is no valid cache entry.
-    static func cachedJobFolder(for url: String) -> URL? {
-        guard let map = readURLCache(), let folderPath = map[url] else { return nil }
-        let folder = URL(fileURLWithPath: folderPath)
-        let required = ["analysis.wav", "job.json"]
-        for name in required {
-            guard FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path) else {
-                return nil
-            }
-        }
-        return folder
-    }
-
-    /// Persists a `url → folderPath` mapping in the URL cache.
-    static func saveURLCache(url: String, folderPath: String) {
-        var map = readURLCache() ?? [:]
-        map[url] = folderPath
-        writeURLCache(map)
-    }
-
-    /// Removes a stale cache entry for `url`.
-    static func evictURLCache(url: String) {
-        guard var map = readURLCache() else { return }
-        map.removeValue(forKey: url)
-        writeURLCache(map)
-    }
-
-    private static func readURLCache() -> [String: String]? {
-        guard let data = try? Data(contentsOf: urlCacheFile),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: String] else {
-            return nil
-        }
-        return obj
-    }
-
-    private static func writeURLCache(_ map: [String: String]) {
-        guard let data = try? JSONSerialization.data(withJSONObject: map, options: .prettyPrinted) else { return }
-        try? FileManager.default.createDirectory(
-            at: urlCacheFile.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        try? data.write(to: urlCacheFile)
-    }
+    static let baseDirectory: URL = supportDirectory.appendingPathComponent("jobs", isDirectory: true)
 
     static func createJobFolder(jobId: String) throws -> URL {
         let folder = baseDirectory.appendingPathComponent(jobId, isDirectory: true)
@@ -71,55 +27,111 @@ struct LocalFileStore {
         return folder
     }
 
+    // MARK: - Storage
+
+    /// Bytes used by one job folder.
+    static func folderSize(at folder: URL) -> Int64 {
+        guard let enumerator = FileManager.default.enumerator(
+            at: folder,
+            includingPropertiesForKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
+        ) else { return 0 }
+
+        var total: Int64 = 0
+        for case let url as URL in enumerator {
+            let values = try? url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey])
+            let size = values?.totalFileAllocatedSize ?? values?.fileAllocatedSize ?? 0
+            total += Int64(size)
+        }
+        return total
+    }
+
+    /// Bytes used by every job folder. Downloaded audio and 44.1 kHz WAVs are
+    /// large and nothing ever removed them, so the app now reports the total.
+    static func totalJobsSize() -> Int64 {
+        guard let folders = try? FileManager.default.contentsOfDirectory(
+            at: baseDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+        ) else { return 0 }
+        return folders.reduce(0) { $0 + folderSize(at: $1) }
+    }
+
+    /// Comparable form of a folder path. Directory URLs can carry a trailing
+    /// slash and /tmp and /var are symlinks, so raw `path` comparisons can call a
+    /// live folder orphaned — which would offer the user its deletion.
+    ///
+    /// `nonisolated` because it is pure path arithmetic and the download stage
+    /// needs it off the main actor.
+    nonisolated static func comparablePath(_ url: URL) -> String {
+        var path = url.standardizedFileURL.resolvingSymlinksInPath().path
+        while path.count > 1 && path.hasSuffix("/") { path.removeLast() }
+        return path
+    }
+
+    /// Removes a job folder.
+    @discardableResult
+    static func deleteJobFolder(at folder: URL) -> Bool {
+        do {
+            try FileManager.default.removeItem(at: folder)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// Job folders on disk that no live job points at — left behind by
+    /// re-analysing a song, which writes a new folder each time.
+    static func orphanedFolders(keeping liveFolders: Set<String>) -> [URL] {
+        guard let folders = try? FileManager.default.contentsOfDirectory(
+            at: baseDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+        ) else { return [] }
+        let live = Set(liveFolders.map { comparablePath(URL(fileURLWithPath: $0)) })
+        return folders.filter { folder in
+            var isDirectory: ObjCBool = false
+            let exists = FileManager.default.fileExists(atPath: folder.path, isDirectory: &isDirectory)
+            return exists && isDirectory.boolValue && !live.contains(comparablePath(folder))
+        }
+    }
+
     static func saveJob(_ job: AnalysisJob, to folder: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(job)
-        try data.write(to: folder.appendingPathComponent("job.json"))
+        try data.write(to: folder.appendingPathComponent("job.json"), options: .atomic)
     }
+
+    /// Serialises log appends off the caller's thread.
+    ///
+    /// Every yt-dlp progress line and every ffmpeg stats line went through here,
+    /// and the caller is on the main actor — so a download hitched the UI with
+    /// an open/seek/write/close per chunk. One queue keeps the ordering while
+    /// keeping the work off the main thread.
+    private static let logQueue = DispatchQueue(label: "chordadmin.logs", qos: .utility)
 
     static func appendLog(_ text: String, to folder: URL) {
         guard let data = text.data(using: .utf8) else { return }
         let logURL = folder.appendingPathComponent("logs.txt")
-        if FileManager.default.fileExists(atPath: logURL.path) {
-            if let handle = try? FileHandle(forWritingTo: logURL) {
+        logQueue.async {
+            if FileManager.default.fileExists(atPath: logURL.path) {
+                guard let handle = try? FileHandle(forWritingTo: logURL) else { return }
                 defer { try? handle.close() }
-                handle.seekToEndOfFile()
-                handle.write(data)
+                // The throwing variants: the non-throwing ones raise an ObjC
+                // exception on a full disk instead of returning an error, which
+                // would take the app down rather than losing a log line.
+                guard (try? handle.seekToEnd()) != nil else { return }
+                try? handle.write(contentsOf: data)
+            } else {
+                try? data.write(to: logURL)
             }
-        } else {
-            try? data.write(to: logURL)
         }
     }
 
-    /// Returns the `sectionCount` from the cached job whose URL shares the same
-    /// YouTube video ID as `url`. Handles format mismatches (youtu.be vs youtube.com).
-    static func cachedSectionCount(for url: String) -> Int? {
-        guard let targetID = youTubeVideoID(from: url), let map = readURLCache() else { return nil }
-        for (cacheUrl, folderPath) in map {
-            guard youTubeVideoID(from: cacheUrl) == targetID else { continue }
-            let folder = URL(fileURLWithPath: folderPath)
-            let required = ["analysis.wav", "job.json"]
-            guard required.allSatisfy({ FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }) else { continue }
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return (try? decoder.decode(AnalysisJob.self, from: (try? Data(contentsOf: folder.appendingPathComponent("job.json"))) ?? Data()))?.sectionCount
-        }
-        return nil
-    }
-
-    private static func youTubeVideoID(from urlString: String) -> String? {
-        guard let url = URL(string: urlString) else { return nil }
-        if url.host?.contains("youtu.be") == true {
-            return url.pathComponents.dropFirst().first
-        }
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        return components?.queryItems?.first(where: { $0.name == "v" })?.value
+    /// Waits for queued log writes to reach disk. For tests and for quitting.
+    static func flushLogs() {
+        logQueue.sync {}
     }
 
     static func saveSourceInfo(_ info: [String: String], to folder: URL) throws {
         let data = try JSONSerialization.data(withJSONObject: info, options: .prettyPrinted)
-        try data.write(to: folder.appendingPathComponent("source.info.json"))
+        try data.write(to: folder.appendingPathComponent("source.info.json"), options: .atomic)
     }
 }

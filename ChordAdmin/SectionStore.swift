@@ -3,17 +3,20 @@ import Combine
 
 // MARK: - Model
 
-struct ChordSection: Codable, Identifiable, Sendable, Equatable {
+nonisolated struct ChordSection: Codable, Identifiable, Sendable, Equatable {
     var id: String
     var name: String
     var startBar: Int
     var endBar: Int
     var bars: [Int]
 
-    static func == (lhs: ChordSection, rhs: ChordSection) -> Bool { lhs.id == rhs.id }
+    // Deliberately the synthesised memberwise equality, not identity: a rename
+    // or a changed bar range IS a change. Comparing ids alone made every
+    // content-only difference invisible, so reconciled sections were never
+    // written back and the export shipped the pre-reconcile bar numbers.
 }
 
-struct SectionsFile: Codable, Sendable {
+nonisolated struct SectionsFile: Codable, Sendable {
     struct Source: Codable, Sendable {
         var chordChartPerformerPath: String?
         var sectionCandidatesPath: String?
@@ -28,38 +31,48 @@ struct SectionsFile: Codable, Sendable {
 @MainActor
 final class SectionStore: ObservableObject {
     @Published private(set) var sections: [ChordSection] = []
+    /// Set when a save fails, so the UI can say so rather than losing edits silently.
+    @Published private(set) var saveError: String?
+
+    /// Called after any successful edit, so the job can record that it now has
+    /// changes the last export does not include.
+    var onEdit: (() -> Void)?
 
     private var filePath: String?
     private var performerPath: String?
     private var candidatesPath: String?
+    private var loadedJobID: String?
 
     // MARK: Load / initialise
 
-    /// Load sections.json for `job`.
-    /// If sections.json doesn't exist, or only has one default section covering all bars,
-    /// generate initial sections from section.candidates.json.
+    /// Loads sections.json for `job`, building initial sections from the
+    /// detected candidates only when no file exists yet.
+    ///
+    /// The previous build also discarded any saved file that held a single
+    /// section spanning every bar, treating it as a leftover default — which
+    /// silently threw away the work of a user who had merged everything back
+    /// into one section.
     func load(for job: AnalysisJob, jobFolder: URL) {
         let path = jobFolder.appendingPathComponent("sections.json").path
         filePath       = path
         performerPath  = job.chordChartPerformerPath
         candidatesPath = job.sectionCandidatesPath
+        loadedJobID    = job.id
+        saveError      = nil
 
-        // Read all bar numbers (performer first, draft fallback)
         let allBars = barsFrom(job: job)
         guard !allBars.isEmpty else { sections = []; return }
 
-        // Try to load existing sections.json
-        if let existing = read(from: path) {
-            // Use existing unless it's a single-section default covering all bars
-            let isDefaultSingle = existing.sections.count == 1
-                && Set(existing.sections[0].bars) == Set(allBars)
-            if !isDefaultSingle {
-                sections = existing.sections
-                return
-            }
+        if let existing = read(from: path), !existing.sections.isEmpty {
+            sections = reconcile(existing.sections, with: allBars)
+            // Reconciling only fixed the copy in memory. Export translates the
+            // job folder on disk, so without writing the result back the export
+            // shipped the pre-reconcile bar numbers — sections pointing at bars
+            // a re-tune had removed, and new bars belonging to none.
+            if sections != existing.sections { save(notify: false) }
+            return
         }
 
-        // Generate from candidates if available
         let candidates = loadCandidates(job: job)
         if !candidates.isEmpty {
             sections = buildSectionsFromCandidates(candidates, allBars: allBars)
@@ -70,7 +83,47 @@ final class SectionStore: ObservableObject {
                 bars: allBars
             )]
         }
-        save()
+        save(notify: false)
+    }
+
+    /// True when this store already holds the sections for `job`.
+    func isLoaded(for job: AnalysisJob) -> Bool { loadedJobID == job.id }
+
+    func unload() {
+        sections = []
+        filePath = nil
+        loadedJobID = nil
+        // Belongs to the song that was open, not the next one.
+        saveError = nil
+    }
+
+    /// Drops bars that no longer exist and appends any new ones to the last
+    /// section, so a re-alignment that changes the bar count cannot leave the
+    /// chart with bars that belong to no section.
+    private func reconcile(_ stored: [ChordSection], with allBars: [Int]) -> [ChordSection] {
+        let valid = Set(allBars)
+        var result: [ChordSection] = []
+        for var section in stored {
+            let bars = section.bars.filter { valid.contains($0) }.sorted()
+            guard !bars.isEmpty else { continue }
+            section.bars = bars
+            section.startBar = bars.first!
+            section.endBar = bars.last!
+            result.append(section)
+        }
+        guard !result.isEmpty else {
+            return [ChordSection(id: "section-1", name: "Intro",
+                                 startBar: allBars.first!, endBar: allBars.last!, bars: allBars)]
+        }
+        let covered = Set(result.flatMap(\.bars))
+        let missing = allBars.filter { !covered.contains($0) }.sorted()
+        if !missing.isEmpty {
+            var last = result[result.count - 1]
+            last.bars = (last.bars + missing).sorted()
+            last.endBar = last.bars.last!
+            result[result.count - 1] = last
+        }
+        return result
     }
 
     // MARK: Mutations
@@ -95,7 +148,9 @@ final class SectionStore: ObservableObject {
 
     func rename(section id: String, to name: String) {
         guard let idx = sections.firstIndex(where: { $0.id == id }) else { return }
-        sections[idx].name = name
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        sections[idx].name = trimmed
         save()
     }
 
@@ -111,54 +166,24 @@ final class SectionStore: ObservableObject {
         save()
     }
 
-    /// Apply a single candidate: splits sections at startBar and the bar just after endBar,
-    /// then names the resulting section "Section [label]".
-    func applyCandidate(_ candidate: SectionCandidate) {
-        let allBarsSet = Set(sections.flatMap { $0.bars })
-        startNewSectionNoSave(at: candidate.startBar)
-        if let nextBar = allBarsSet.filter({ $0 > candidate.endBar }).min() {
-            startNewSectionNoSave(at: nextBar)
-        }
-        if let idx = sections.firstIndex(where: { $0.startBar == candidate.startBar }) {
-            sections[idx].name = "Section \(candidate.label)"
-        }
-        save()
-    }
 
-    /// Apply all non-overlapping candidates (prefer 8-bar, then higher matchCount).
-    func applyAllNonOverlapping(_ candidates: [SectionCandidate]) {
+    /// Rebuilds sections from the detected repeats for `job`, discarding the
+    /// current split. Used by the inspector's "Detect sections again".
+    func autoDetectSections(for job: AnalysisJob) {
+        let candidates = loadCandidates(job: job)
         guard !candidates.isEmpty else { return }
-
-        let sorted = candidates.sorted { a, b in
-            if a.barCount   != b.barCount   { return a.barCount   > b.barCount   }
-            if a.matchCount != b.matchCount { return a.matchCount > b.matchCount }
-            return a.startBar < b.startBar
-        }
-        var accepted: [SectionCandidate] = []
-        for cand in sorted {
-            let overlaps = accepted.contains { a in
-                cand.startBar <= a.endBar && cand.endBar >= a.startBar
-            }
-            if !overlaps { accepted.append(cand) }
-        }
-        guard !accepted.isEmpty else { return }
-
-        let allBarsSet = Set(sections.flatMap { $0.bars })
-        var splitPoints = Set<Int>()
-        for cand in accepted {
-            splitPoints.insert(cand.startBar)
-            if let nextBar = allBarsSet.filter({ $0 > cand.endBar }).min() {
-                splitPoints.insert(nextBar)
-            }
-        }
-        for bar in splitPoints.sorted() { startNewSectionNoSave(at: bar) }
-        for cand in accepted {
-            if let idx = sections.firstIndex(where: { $0.startBar == cand.startBar }) {
-                sections[idx].name = "Section \(cand.label)"
-            }
-        }
+        let allBars = sections.flatMap(\.bars).sorted()
+        guard !allBars.isEmpty else { return }
+        sections = buildSectionsFromCandidates(candidates, allBars: allBars)
         save()
     }
+
+    /// How many repeats were detected, so the UI can say whether re-detecting
+    /// would do anything.
+    func candidateCount(for job: AnalysisJob) -> Int {
+        loadCandidates(job: job).count
+    }
+
 
     // MARK: Queries
 
@@ -174,6 +199,19 @@ final class SectionStore: ObservableObject {
         sections.contains { $0.startBar == bar }
     }
 
+    /// Position of `bar` within its section, e.g. "bar 10 of 16".
+    func positionInSection(of bar: Int) -> (index: Int, total: Int)? {
+        guard let section = section(containing: bar),
+              let index = section.bars.sorted().firstIndex(of: bar) else { return nil }
+        return (index + 1, section.bars.count)
+    }
+
+    /// How many later sections repeat this one's chord shape, for the
+    /// "repeats ×2" hint in the chart. Compares bar counts and names.
+    func repeatCount(of section: ChordSection) -> Int {
+        sections.filter { $0.name == section.name }.count
+    }
+
     // MARK: Private helpers
 
     private func startNewSectionNoSave(at bar: Int) {
@@ -183,6 +221,7 @@ final class SectionStore: ObservableObject {
         guard let splitPoint = sec.bars.firstIndex(of: bar) else { return }
         let firstBars  = Array(sec.bars[..<splitPoint])
         let secondBars = Array(sec.bars[splitPoint...])
+        guard !firstBars.isEmpty, !secondBars.isEmpty else { return }
         sec.bars   = firstBars
         sec.endBar = firstBars.last ?? sec.startBar
         let newSec = ChordSection(
@@ -215,20 +254,9 @@ final class SectionStore: ObservableObject {
 
     /// Bar numbers from performer chart (preferred) or draft chart (fallback).
     private func barsFrom(job: AnalysisJob) -> [Int] {
-        if let path = job.chordChartPerformerPath,
-           let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let rawBars = json["bars"] as? [[String: Any]] {
-            let bars = rawBars.compactMap { $0["bar"] as? Int }.sorted()
-            if !bars.isEmpty { return bars }
-        }
-        if let path = job.chordChartDraftPath,
-           let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let rawBars = json["bars"] as? [[String: Any]] {
-            return rawBars.compactMap { $0["bar"] as? Int }.sorted()
-        }
-        return []
+        let performer = JobManager.loadBars(atPath: job.chordChartPerformerPath).map(\.bar).sorted()
+        if !performer.isEmpty { return performer }
+        return JobManager.loadBars(atPath: job.chordChartDraftPath).map(\.bar).sorted()
     }
 
     private func loadCandidates(job: AnalysisJob) -> [SectionCandidate] {
@@ -335,7 +363,7 @@ final class SectionStore: ObservableObject {
         return try? JSONDecoder().decode(SectionsFile.self, from: data)
     }
 
-    func save() {
+    func save(notify: Bool = true) {
         guard let path = filePath else { return }
         let file = SectionsFile(
             source: .init(
@@ -345,10 +373,16 @@ final class SectionStore: ObservableObject {
             ),
             sections: sections
         )
-        guard let data = try? JSONEncoder().encode(file) else { return }
-        if let obj    = try? JSONSerialization.jsonObject(with: data),
-           let pretty = try? JSONSerialization.data(withJSONObject: obj, options: .prettyPrinted) {
-            try? pretty.write(to: URL(fileURLWithPath: path))
+        do {
+            let data = try JSONEncoder().encode(file)
+            let object = try JSONSerialization.jsonObject(with: data)
+            let pretty = try JSONSerialization.data(withJSONObject: object, options: .prettyPrinted)
+            try pretty.write(to: URL(fileURLWithPath: path), options: .atomic)
+            saveError = nil
+            if notify { onEdit?() }
+        } catch {
+            // Surfaced in the inspector — the old build swallowed this entirely.
+            saveError = error.localizedDescription
         }
     }
 }

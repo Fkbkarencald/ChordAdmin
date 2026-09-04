@@ -1,0 +1,85 @@
+{
+  "artboards": [
+    {
+      "file": "FrontScreen.dc.html",
+      "x": -1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Front screen \u2014 launch dashboard"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Main \u2014 library \u00b7 chart \u00b7 inspector"
+    },
+    {
+      "file": "Analyzing.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Analysing \u2014 stage checklist & queue"
+    },
+    {
+      "file": "BeatTuning.dc.html",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Beat tuning \u2014 pickup preview"
+    },
+    {
+      "file": "ExportSheet.dc.html",
+      "x": 0,
+      "y": 1060,
+      "w": 1440,
+      "h": 900,
+      "title": "Export \u2014 confirm before overwrite"
+    },
+    {
+      "file": "States.dc.html",
+      "x": 1560,
+      "y": 1060,
+      "w": 1060,
+      "h": 700,
+      "title": "Failure & readiness states"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "overview",
+      "x": -1930,
+      "y": 0,
+      "w": 330,
+      "text": "ChordAdmin redesign \u2014 one window, three columns.\nThe front screen (right) is launch with nothing selected: continue where you left off, batch-analyse new songs as a queue, recent exports, environment at a glance.\nSidebar = the work queue: every song shows its state (empty ring = not analysed, blue dot = analysed, orange pencil = edited since export, green check = exported), with filters. Songs without a YouTube link stay visible, just dimmed.\nInspector tabs: Bar \u00b7 Tuning \u00b7 Analysis \u00b7 Info replace the fixed 280pt diagnostics column."
+    },
+    {
+      "id": "pipeline-note",
+      "x": 1560,
+      "y": -230,
+      "w": 300,
+      "text": "The 11-stage pipeline becomes a checklist with per-stage timing, inline warnings and Cancel \u2014 replacing the colour-capsule badge + raw log console. The log is still there, one disclosure away."
+    },
+    {
+      "id": "tuning-note",
+      "x": 3120,
+      "y": -230,
+      "w": 300,
+      "text": "Beat correction goes from blind trial-and-error (each offset click re-ran the whole chart) to a sighted choice: all four pickups drawn over the audio, chart previews live, \u23ce applies."
+    },
+    {
+      "id": "export-note",
+      "x": 0,
+      "y": 2010,
+      "w": 300,
+      "text": "Export used to write straight to production Firestore from a tiny button. Now it shows exactly what will be overwritten (tempo + sections diff) and keeps a local snapshot for rollback."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

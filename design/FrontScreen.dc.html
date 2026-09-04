@@ -1,0 +1,291 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;background:#e9e9ee;color:#1d1d1f;-webkit-font-smoothing:antialiased}
+a{color:#0a63d6}a:hover{color:#084eab}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.win{width:1440px;height:900px;display:flex;flex-direction:column;background:#fff;border-radius:10px;overflow:hidden;position:relative}
+.toolbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:10px;padding:0 14px;background:linear-gradient(#fafafa,#f1f1f4);border-bottom:1px solid #d9d9de}
+.lights{display:flex;gap:8px;margin-right:4px}
+.light{width:12px;height:12px;border-radius:50%}
+.tbtn{width:30px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#5c5c63}
+.btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:6px;font-size:12px;font-weight:500;background:linear-gradient(#fff,#f6f6f8);border:1px solid #cfcfd4;box-shadow:0 .5px 1px rgba(0,0,0,.06);color:#1d1d1f;white-space:nowrap}
+.btn-primary{background:linear-gradient(#2f8bff,#0a6cf5);border:1px solid #0a5fd0;color:#fff}
+.btn-sm{height:23px;padding:0 9px;font-size:11px;border-radius:5.5px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:12px;font-size:11px;font-weight:500}
+.body{flex:1;display:flex;min-height:0}
+.sidebar{flex:0 0 264px;display:flex;flex-direction:column;background:#f2f2f6;border-right:1px solid #e0e0e4;min-height:0}
+.search{display:flex;align-items:center;gap:6px;height:28px;margin:10px 12px 8px;padding:0 8px;border-radius:6.5px;background:#e4e4e9;color:#8a8a90;font-size:12px}
+.scope{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 8px}
+.chip{height:21px;padding:0 9px;border-radius:10.5px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px;background:#e4e4e9;color:#55555c}
+.chip-on{background:#4a4a52;color:#fff}
+.slist{flex:1;min-height:0;overflow:hidden;padding:2px 8px;display:flex;flex-direction:column;gap:1px}
+.srow{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px}
+.sname{font-size:12.5px;font-weight:500;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sartist{font-size:10.5px;color:#86868c;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb{width:34px;height:34px;border-radius:5px;flex:0 0 34px;display:flex;align-items:center;justify-content:center}
+.sfoot{border-top:1px solid #e0e0e4;padding:9px 14px;display:flex;flex-direction:column;gap:5px;font-size:10.5px;color:#6e6e73}
+.frow{display:flex;align-items:center;gap:6px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;min-height:0}
+.transport{height:48px;flex:0 0 48px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid #ececf0}
+.stat{height:22px;padding:0 9px;border-radius:11px;background:#f2f2f6;font-size:11px;font-weight:500;color:#48484e;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.waveblock{flex:0 0 132px;border-bottom:1px solid #ececf0;position:relative;background:#fbfbfd;overflow:hidden}
+.chart{flex:1;min-height:0;overflow:hidden;padding:14px 20px 0;display:flex;flex-direction:column;gap:12px;position:relative}
+.sechead{display:flex;align-items:baseline;gap:8px}
+.secname{font-size:13px;font-weight:600}
+.secmeta{font-size:10.5px;color:#98989e}
+.brow{display:flex;gap:10px}
+.bar{flex:1;height:60px;border-radius:8px;background:#f6f6f8;border:1px solid #e7e7ea;position:relative;display:flex;gap:3px;padding:3px}
+.barno{position:absolute;top:2px;left:6px;font-size:8.5px;color:#a4a4aa;font-weight:700;z-index:2;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.seg{flex:1;border-radius:5.5px;background:#fff;border:1px solid #e4e4e8;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#2b2b30}
+.bar-sel{border:1.5px solid #0a6cf5;box-shadow:0 0 0 3px rgba(10,108,245,.14)}
+.bar-act{border:1.5px solid #30b350;background:#f0faf2}
+.bar-chg{border:1.5px dashed #0a6cf5;background:rgba(10,108,245,.045)}
+.pop{position:absolute;display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #d6d6dc;border-radius:9px;padding:5px 6px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:6}
+.popbtn{height:24px;padding:0 9px;border-radius:6px;font-size:11px;font-weight:500;background:#f4f4f7;display:inline-flex;gap:5px;align-items:center;color:#2b2b30;white-space:nowrap}
+.key{font-size:9px;font-weight:700;color:#8a8a90;background:#fff;border:1px solid #d9d9de;border-radius:3px;padding:0 3.5px;line-height:13px}
+.inspector{flex:0 0 296px;background:#f7f7fa;border-left:1px solid #e0e0e4;display:flex;flex-direction:column;min-height:0}
+.segc{display:flex;background:#e4e4e9;border-radius:7px;padding:2px;margin:12px 12px 0;flex:0 0 auto}
+.segi{flex:1;text-align:center;font-size:11px;font-weight:500;padding:4px 0;border-radius:5px;color:#55555c}
+.segi-on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.14);color:#1d1d1f;font-weight:600}
+.ipan{flex:1;min-height:0;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px}
+.grp{background:#fff;border:1px solid #e6e6ea;border-radius:9px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.glabel{font-size:9.5px;font-weight:600;letter-spacing:.07em;color:#8c8c92;text-transform:uppercase}
+.stg{display:flex;align-items:center;gap:8px;font-size:12px;color:#2b2b30}
+.stgmeta{margin-left:auto;font-size:10px;color:#a0a0a6;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.minisegc{display:flex;background:#ececf0;border-radius:6px;padding:2px}
+.minisegi{flex:1;text-align:center;font-size:10.5px;font-weight:500;padding:3px 0;border-radius:4px;color:#55555c}
+.minisegi-on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12);color:#1d1d1f;font-weight:600}
+.crow{display:flex;align-items:center;gap:8px;font-size:12px}
+.hint{font-size:10.5px;color:#98989e;line-height:1.45}
+.card{background:#fff;border:1px solid #e2e2e7;border-radius:11px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+</style>
+</helmet>
+<div class="win">
+  <div class="toolbar">
+  <div class="lights"><span class="light" style="background:#ff5f57;border:.5px solid rgba(0,0,0,.12)"></span><span class="light" style="background:#febc2e;border:.5px solid rgba(0,0,0,.12)"></span><span class="light" style="background:#28c840;border:.5px solid rgba(0,0,0,.12)"></span></div>
+  <div class="tbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><rect x="1.8" y="3" width="12.4" height="10" rx="2" stroke="#5c5c63" stroke-width="1.5"/><path d="M6.3 3v10" stroke="#5c5c63" stroke-width="1.5"/></svg></div>
+  <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+    <div style="font-size:13px;font-weight:600;line-height:1.2">ChordAdmin</div>
+    <div style="font-size:10.5px;color:#6e6e73;line-height:1.2;display:flex;align-items:center;gap:5px">TheStageBee library · 42 songs</div>
+  </div>
+  <div style="flex:1"></div>
+  
+  <div class="tbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><rect x="1.8" y="3" width="12.4" height="10" rx="2" stroke="#5c5c63" stroke-width="1.5"/><path d="M9.7 3v10" stroke="#5c5c63" stroke-width="1.5"/></svg></div>
+</div>
+  <div class="body">
+    <div class="sidebar">
+  <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="7" cy="7" r="4.4" stroke="#8a8a90" stroke-width="1.7"/><path d="m10.4 10.4 3.2 3.2" stroke="#8a8a90" stroke-width="1.7" stroke-linecap="round"/></svg><span>Search songs</span></div>
+  <div class="scope"><span class="chip chip-on">All<span style="opacity:.65">42</span></span><span class="chip">New<span style="opacity:.65">14</span></span><span class="chip">Analysed<span style="opacity:.65">3</span></span><span class="chip">Edited<span style="opacity:.65">6</span></span><span class="chip">Exported<span style="opacity:.65">19</span></span></div>
+  <div class="slist"><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(28 42% 62%),hsl(16 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Golden Hour</div>
+      <div class="sartist" style="color:#86868c">Mara Quinn</div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#f59300"/><path d="M4.9 11.2l.4-1.7 4.6-4.6a1 1 0 0 1 1.4 0l0 0a1 1 0 0 1 0 1.4l-4.6 4.6z" fill="#fff"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(205 42% 62%),hsl(228 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Paper Lanterns</div>
+      <div class="sartist" style="color:#86868c">The Hollow Suns</div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(168 42% 62%),hsl(185 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Undertow</div>
+      <div class="sartist" style="color:#86868c">Vale</div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(262 42% 62%),hsl(280 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Midnight Parade</div>
+      <div class="sartist" style="color:#86868c">Junie West</div>
+    </div>
+    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#0a6cf5"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(95 42% 62%),hsl(120 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Salt &amp; Cedar</div>
+      <div class="sartist" style="color:#86868c">Field Notes</div>
+    </div>
+    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#0a6cf5"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(200 42% 62%),hsl(218 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Wintering</div>
+      <div class="sartist" style="color:#86868c">Aya Rowe</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#b9b9c0" stroke-width="1.8" stroke-dasharray="2.6 2.9"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(330 42% 62%),hsl(350 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Second Story</div>
+      <div class="sartist" style="color:#86868c">The Hollow Suns</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#b9b9c0" stroke-width="1.8" stroke-dasharray="2.6 2.9"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(180 42% 62%),hsl(200 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Glasshouse</div>
+      <div class="sartist" style="color:#86868c">Vale</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#b9b9c0" stroke-width="1.8" stroke-dasharray="2.6 2.9"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(0 42% 62%),hsl(0 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0; opacity:.55;">
+      <div class="sname" style="color:#1d1d1f">Meridian</div>
+      <div class="sartist" style="color:#86868c">No YouTube link</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6.4 9.6 9.6 6.4" stroke="#a0a0a6" stroke-width="1.5" stroke-linecap="round"/><path d="M7.3 4.5 8.6 3.2a2.6 2.6 0 0 1 3.7 3.7L11 8.2M8.7 11.5 7.4 12.8a2.6 2.6 0 0 1-3.7-3.7l1.3-1.3" stroke="#a0a0a6" stroke-width="1.5" stroke-linecap="round"/><path d="m2.5 2.5 11 11" stroke="#a0a0a6" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(48 42% 62%),hsl(30 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Ninety-Nine</div>
+      <div class="sartist" style="color:#86868c">Junie West</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#b9b9c0" stroke-width="1.8" stroke-dasharray="2.6 2.9"/></svg>
+  </div></div>
+  <div class="sfoot"><div class="frow"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#28a745"/></svg><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-weight:500;color:#3d3d44">Backend</span>&nbsp;<span class="mono" style="font-size:10px">localhost:5051</span></span></div><div class="frow"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M3 8.5 6.4 12 13 4.5" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tools OK <span style="opacity:.7">· yt-dlp · ffmpeg · deno</span></span></div><div class="frow"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="5.2" r="2.8" stroke="#6e6e73" stroke-width="1.6"/><path d="M2.8 13.6a5.4 5.4 0 0 1 10.4 0" stroke="#6e6e73" stroke-width="1.6" stroke-linecap="round"/></svg><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">you@example.com</span><span style="margin-left:auto;color:#0a6cf5;font-weight:500">Sign out</span></div></div>
+</div>
+    <div class="main" style="background:#fafafc">
+  <div style="flex:1;min-height:0;overflow:hidden;padding:26px 30px;display:flex;gap:24px">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div class="glabel">Continue</div>
+        <div style="display:flex;gap:14px"><div class="card" style="flex:1;padding:14px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div class="thumb" style="width:52px;height:52px;flex:0 0 52px;border-radius:8px;background:linear-gradient(135deg,hsl(28 42% 62%),hsl(16 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:600">Golden Hour</div>
+        <div style="font-size:11px;color:#6e6e73">Mara Quinn</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#9a5f00"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M2.5 13.5 3 10.8 10.9 2.9a1.4 1.4 0 0 1 2 0l.2.2a1.4 1.4 0 0 1 0 2L5.2 13z" fill="#f59300"/></svg> Edited since last export — 7 sections ready</div>
+    <div style="display:flex;gap:8px;margin-top:2px"><span class="btn btn-sm">Open</span><span class="btn btn-sm btn-primary"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M8 10V2.6M5 5.2 8 2.2l3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.8 10.4v1.8a1.4 1.4 0 0 0 1.4 1.4h7.6a1.4 1.4 0 0 0 1.4-1.4v-1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg> Export to TheStageBee…</span></div>
+  </div><div class="card" style="flex:1;padding:14px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div class="thumb" style="width:52px;height:52px;flex:0 0 52px;border-radius:8px;background:linear-gradient(135deg,hsl(262 42% 62%),hsl(280 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:600">Midnight Parade</div>
+        <div style="font-size:11px;color:#6e6e73">Junie West</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#0a5fd0"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#0a6cf5"/></svg> Analysed — sections need review</div>
+    <div style="display:flex;gap:8px;margin-top:2px"><span class="btn btn-sm">Review sections</span></div>
+  </div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;min-height:0">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="glabel">New in the library</div>
+          <span style="font-size:10.5px;color:#98989e">17 songs not yet analysed</span>
+          <div style="flex:1"></div>
+          <span class="btn btn-sm"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#3d3d44" stroke-width="1.6"/><path d="M8 4.8V8l2.2 1.6" stroke="#3d3d44" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Analyse all 17</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"><div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
+    <div style="height:88px;background:linear-gradient(135deg,hsl(200 42% 66%),hsl(218 48% 46%));display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="padding:9px 11px;display:flex;flex-direction:column;gap:7px">
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Wintering</div>
+        <div style="font-size:10.5px;color:#6e6e73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Aya Rowe</div>
+      </div>
+      <span class="btn btn-sm" style="justify-content:center">Analyse</span>
+    </div>
+  </div><div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
+    <div style="height:88px;background:linear-gradient(135deg,hsl(330 42% 66%),hsl(350 48% 46%));display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="padding:9px 11px;display:flex;flex-direction:column;gap:7px">
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Second Story</div>
+        <div style="font-size:10.5px;color:#6e6e73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">The Hollow Suns</div>
+      </div>
+      <span class="btn btn-sm" style="justify-content:center">Analyse</span>
+    </div>
+  </div><div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
+    <div style="height:88px;background:linear-gradient(135deg,hsl(180 42% 66%),hsl(200 48% 46%));display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="padding:9px 11px;display:flex;flex-direction:column;gap:7px">
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Glasshouse</div>
+        <div style="font-size:10.5px;color:#6e6e73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vale</div>
+      </div>
+      <span class="btn btn-sm" style="justify-content:center">Analyse</span>
+    </div>
+  </div><div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
+    <div style="height:88px;background:linear-gradient(135deg,hsl(48 42% 66%),hsl(30 48% 46%));display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="padding:9px 11px;display:flex;flex-direction:column;gap:7px">
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ninety-Nine</div>
+        <div style="font-size:10.5px;color:#6e6e73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Junie West</div>
+      </div>
+      <span class="btn btn-sm" style="justify-content:center">Analyse</span>
+    </div>
+  </div><div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
+    <div style="height:88px;background:linear-gradient(135deg,hsl(120 42% 66%),hsl(140 48% 46%));display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="padding:9px 11px;display:flex;flex-direction:column;gap:7px">
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Low Tide</div>
+        <div style="font-size:10.5px;color:#6e6e73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Field Notes</div>
+      </div>
+      <span class="btn btn-sm" style="justify-content:center">Analyse</span>
+    </div>
+  </div><div style="border:1.5px dashed #d4d4da;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:11.5px;color:#98989e">+ 12 more</div></div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="hint">Select a song on the left — or open one above — to see its chart. Analysis runs in the background as a queue; you can keep editing one song while others analyse.</div>
+    </div>
+    <div style="flex:0 0 300px;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div class="glabel">Recently exported</div>
+        <div class="card" style="padding:12px 13px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:9px">
+    <div class="thumb" style="width:28px;height:28px;flex:0 0 28px;border-radius:5px;background:linear-gradient(135deg,hsl(205 42% 62%),hsl(228 48% 44%))"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Paper Lanterns</div>
+      <div style="font-size:10px;color:#98989e">yesterday · 18:40</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+          <div style="display:flex;align-items:center;gap:9px">
+    <div class="thumb" style="width:28px;height:28px;flex:0 0 28px;border-radius:5px;background:linear-gradient(135deg,hsl(168 42% 62%),hsl(185 48% 44%))"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Undertow</div>
+      <div style="font-size:10px;color:#98989e">Mon · 21:12</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+          <div style="display:flex;align-items:center;gap:9px">
+    <div class="thumb" style="width:28px;height:28px;flex:0 0 28px;border-radius:5px;background:linear-gradient(135deg,hsl(85 42% 62%),hsl(100 48% 44%))"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Cartwheel</div>
+      <div style="font-size:10px;color:#98989e">Sun · 10:05</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+          <span style="font-size:10.5px;color:#0a6cf5;font-weight:500">All 19 exported songs ▸</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div class="glabel">Environment</div>
+        <div class="card" style="padding:12px 13px;display:flex;flex-direction:column;gap:9px;font-size:11.5px">
+          <div class="frow"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#28a745"/></svg><span>Backend running <span class="mono" style="font-size:10px;color:#98989e">localhost:5051</span></span></div>
+          <div class="frow"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M3 8.5 6.4 12 13 4.5" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tools OK — yt-dlp · ffmpeg · ffprobe · deno</span></div>
+          <div class="frow"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="5.2" r="2.8" stroke="#6e6e73" stroke-width="1.6"/><path d="M2.8 13.6a5.4 5.4 0 0 1 10.4 0" stroke="#6e6e73" stroke-width="1.6" stroke-linecap="round"/></svg><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">you@example.com · can export</span></div>
+          <span style="font-size:10.5px;color:#0a6cf5;font-weight:500">Details ▸</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -47,3 +47,44 @@ build/
 *.env
 .env.*
 secrets.plist
+!.env.example
+!.env.*.example
+
+# Security / local secrets
+service-account*.json
+service_account*.json
+*service-account*.json
+*service_account*.json
+serviceAccount*.json
+*serviceAccount*.json
+firebase-service-account*.json
+credentials*.json
+*credentials*.json
+google-credentials*.json
+secrets*.json
+secret*.json
+*.pem
+*.key
+*.p8
+*.mobileprovision
+.runtimeconfig.json
+functions/.runtimeconfig.json
+.vercel/
+.firebase/
+.firebase-emulator-data/
+firebase-export-*/
+emulator-data/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+storage-debug.log
+database-debug.log
+pubsub-debug.log
+Tools/.build/
+Tools/.render-output/
+Tools/.render-output-scale*/
+
+# Seeded design canvas — 2.7MB of generated editor payload.
+# Regenerate with design/build.py plus the design skill's seed helper.
+design/chordadmin-redesign.html

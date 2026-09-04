@@ -1,0 +1,306 @@
+{
+  "status": "success",
+  "song": {
+    "title": "",
+    "key": "",
+    "tempo": 120,
+    "timeSignature": [
+      4,
+      4
+    ],
+    "artists": [],
+    "sections": [
+      {
+        "lines": [
+          {
+            "bars": [
+              {
+                "chords": [
+                  {
+                    "chord": "C",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "AM",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "F",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "G",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              }
+            ]
+          },
+          {
+            "bars": [
+              {
+                "chords": [
+                  {
+                    "chord": "C",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "AM",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "F",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "G",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              }
+            ]
+          }
+        ],
+        "structure": "1fr",
+        "tempo": 120,
+        "timeSignature": [
+          4,
+          4
+        ],
+        "title": "Section A"
+      },
+      {
+        "lines": [
+          {
+            "bars": [
+              {
+                "chords": [
+                  {
+                    "chord": "C",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "AM",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "F",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "G",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              }
+            ]
+          },
+          {
+            "bars": [
+              {
+                "chords": [
+                  {
+                    "chord": "C",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "AM",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "F",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              },
+              {
+                "chords": [
+                  {
+                    "chord": "G",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              }
+            ]
+          }
+        ],
+        "structure": "1fr",
+        "tempo": 120,
+        "timeSignature": [
+          4,
+          4
+        ],
+        "title": "Section A"
+      },
+      {
+        "lines": [
+          {
+            "bars": [
+              {
+                "chords": [
+                  {
+                    "chord": "G",
+                    "hit": false,
+                    "pause": false
+                  }
+                ],
+                "structure": "1fr",
+                "timeSignature": [
+                  4,
+                  4
+                ]
+              }
+            ]
+          }
+        ],
+        "structure": "1fr",
+        "tempo": 120,
+        "timeSignature": [
+          4,
+          4
+        ],
+        "title": "Outro"
+      }
+    ]
+  }
+}
