@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;background:#e9e9ee;color:#1d1d1f;-webkit-font-smoothing:antialiased}
+a{color:#0a63d6}a:hover{color:#084eab}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.win{width:1440px;height:900px;display:flex;flex-direction:column;background:#fff;border-radius:10px;overflow:hidden;position:relative}
+.toolbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:10px;padding:0 14px;background:linear-gradient(#fafafa,#f1f1f4);border-bottom:1px solid #d9d9de}
+.lights{display:flex;gap:8px;margin-right:4px}
+.light{width:12px;height:12px;border-radius:50%}
+.tbtn{width:30px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#5c5c63}
+.btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:6px;font-size:12px;font-weight:500;background:linear-gradient(#fff,#f6f6f8);border:1px solid #cfcfd4;box-shadow:0 .5px 1px rgba(0,0,0,.06);color:#1d1d1f;white-space:nowrap}
+.btn-primary{background:linear-gradient(#2f8bff,#0a6cf5);border:1px solid #0a5fd0;color:#fff}
+.btn-sm{height:23px;padding:0 9px;font-size:11px;border-radius:5.5px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:12px;font-size:11px;font-weight:500}
+.body{flex:1;display:flex;min-height:0}
+.sidebar{flex:0 0 264px;display:flex;flex-direction:column;background:#f2f2f6;border-right:1px solid #e0e0e4;min-height:0}
+.search{display:flex;align-items:center;gap:6px;height:28px;margin:10px 12px 8px;padding:0 8px;border-radius:6.5px;background:#e4e4e9;color:#8a8a90;font-size:12px}
+.scope{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 8px}
+.chip{height:21px;padding:0 9px;border-radius:10.5px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px;background:#e4e4e9;color:#55555c}
+.chip-on{background:#4a4a52;color:#fff}
+.slist{flex:1;min-height:0;overflow:hidden;padding:2px 8px;display:flex;flex-direction:column;gap:1px}
+.srow{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px}
+.sname{font-size:12.5px;font-weight:500;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sartist{font-size:10.5px;color:#86868c;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb{width:34px;height:34px;border-radius:5px;flex:0 0 34px;display:flex;align-items:center;justify-content:center}
+.sfoot{border-top:1px solid #e0e0e4;padding:9px 14px;display:flex;flex-direction:column;gap:5px;font-size:10.5px;color:#6e6e73}
+.frow{display:flex;align-items:center;gap:6px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;min-height:0}
+.transport{height:48px;flex:0 0 48px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid #ececf0}
+.stat{height:22px;padding:0 9px;border-radius:11px;background:#f2f2f6;font-size:11px;font-weight:500;color:#48484e;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.waveblock{flex:0 0 132px;border-bottom:1px solid #ececf0;position:relative;background:#fbfbfd;overflow:hidden}
+.chart{flex:1;min-height:0;overflow:hidden;padding:14px 20px 0;display:flex;flex-direction:column;gap:12px;position:relative}
+.sechead{display:flex;align-items:baseline;gap:8px}
+.secname{font-size:13px;font-weight:600}
+.secmeta{font-size:10.5px;color:#98989e}
+.brow{display:flex;gap:10px}
+.bar{flex:1;height:60px;border-radius:8px;background:#f6f6f8;border:1px solid #e7e7ea;position:relative;display:flex;gap:3px;padding:3px}
+.barno{position:absolute;top:2px;left:6px;font-size:8.5px;color:#a4a4aa;font-weight:700;z-index:2;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.seg{flex:1;border-radius:5.5px;background:#fff;border:1px solid #e4e4e8;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#2b2b30}
+.bar-sel{border:1.5px solid #0a6cf5;box-shadow:0 0 0 3px rgba(10,108,245,.14)}
+.bar-act{border:1.5px solid #30b350;background:#f0faf2}
+.bar-chg{border:1.5px dashed #0a6cf5;background:rgba(10,108,245,.045)}
+.pop{position:absolute;display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #d6d6dc;border-radius:9px;padding:5px 6px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:6}
+.popbtn{height:24px;padding:0 9px;border-radius:6px;font-size:11px;font-weight:500;background:#f4f4f7;display:inline-flex;gap:5px;align-items:center;color:#2b2b30;white-space:nowrap}
+.key{font-size:9px;font-weight:700;color:#8a8a90;background:#fff;border:1px solid #d9d9de;border-radius:3px;padding:0 3.5px;line-height:13px}
+.inspector{flex:0 0 296px;background:#f7f7fa;border-left:1px solid #e0e0e4;display:flex;flex-direction:column;min-height:0}
+.segc{display:flex;background:#e4e4e9;border-radius:7px;padding:2px;margin:12px 12px 0;flex:0 0 auto}
+.segi{flex:1;text-align:center;font-size:11px;font-weight:500;padding:4px 0;border-radius:5px;color:#55555c}
+.segi-on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.14);color:#1d1d1f;font-weight:600}
+.ipan{flex:1;min-height:0;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px}
+.grp{background:#fff;border:1px solid #e6e6ea;border-radius:9px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.glabel{font-size:9.5px;font-weight:600;letter-spacing:.07em;color:#8c8c92;text-transform:uppercase}
+.stg{display:flex;align-items:center;gap:8px;font-size:12px;color:#2b2b30}
+.stgmeta{margin-left:auto;font-size:10px;color:#a0a0a6;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.minisegc{display:flex;background:#ececf0;border-radius:6px;padding:2px}
+.minisegi{flex:1;text-align:center;font-size:10.5px;font-weight:500;padding:3px 0;border-radius:4px;color:#55555c}
+.minisegi-on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12);color:#1d1d1f;font-weight:600}
+.crow{display:flex;align-items:center;gap:8px;font-size:12px}
+.hint{font-size:10.5px;color:#98989e;line-height:1.45}
+.card{background:#fff;border:1px solid #e2e2e7;border-radius:11px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+</style>
+</helmet>
+<div style="width:1060px;height:700px;background:#f0f0f3;border-radius:10px;padding:24px 28px;display:flex;flex-direction:column;gap:16px;overflow:hidden;box-sizing:border-box">
+  <div>
+    <div style="font-size:16px;font-weight:700">When things go wrong</div>
+    <div style="font-size:11.5px;color:#6e6e73;margin-top:2px">Every failure names its stage, keeps finished work, and offers the one action that fixes it — no more green “Completed” badges over missing charts.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;flex:1;min-height:0">
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+  <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#98989e">Stage failure → retry in place</div>
+  <div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1">
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tools check</span><span class="stgmeta">0.2s</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download audio</span><span class="stgmeta">0:12</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#e5372e"/><path d="M5.7 5.7 10.3 10.3M10.3 5.7 5.7 10.3" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg><span><span style="font-weight:600">Convert to WAV — failed</span></span><span class="stgmeta">0:01</span></div>
+  <div class="mono" style="font-size:10.5px;color:#e5372e;background:rgba(229,55,46,.07);border:1px solid rgba(229,55,46,.2);border-radius:7px;padding:8px 10px;line-height:1.5">ffmpeg: Invalid data found when<br>processing input (audio.original.webm)</div>
+  <div style="display:flex;gap:8px">
+    <span class="btn btn-sm btn-primary"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M13 8a5 5 0 1 1-1.5-3.6" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M11.6 1.6v2.9h-2.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Retry this stage</span>
+    <span class="btn btn-sm">Open log</span>
+  </div>
+  <div class="hint">The download is kept — retrying never re-does finished stages.</div></div>
+</div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+  <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#98989e">Backend down → resumable, not terminal</div>
+  <div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1">
+  <div style="display:flex;align-items:center;gap:8px">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M8 2 14.5 13.2H1.5Z" fill="#f59300"/><path d="M8 6.2v3.2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".9" fill="#fff"/></svg><span style="font-size:13px;font-weight:600">Audio ready — analysis paused</span>
+    <span class="pill" style="background:rgba(229,55,46,.1);color:#e5372e;margin-left:auto"><svg width="7" height="7" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#e5372e"/></svg> Backend offline</span>
+  </div>
+  <div style="font-size:11.5px;color:#6e6e73;line-height:1.5">Download, conversion and health checks are done. Beat and chord analysis will resume from where it stopped — nothing is re-downloaded.</div>
+  <div style="display:flex;gap:8px">
+    <span class="btn btn-sm btn-primary">Resume analysis</span>
+    <span class="btn btn-sm"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M13 8a5 5 0 1 1-1.5-3.6" stroke="#3d3d44" stroke-width="1.7" stroke-linecap="round"/><path d="M11.6 1.6v2.9h-2.9" stroke="#3d3d44" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Check backend</span>
+  </div>
+  <div class="hint mono" style="font-size:10px">GET http://localhost:5051/health → connection refused · start it with ../ChordAdminBackend/start.sh</div></div>
+</div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+  <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#98989e">Signed out → explicit read-only mode</div>
+  <div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1">
+  <div style="display:flex;align-items:center;gap:8px">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="5.2" r="2.8" stroke="#3d3d44" stroke-width="1.6"/><path d="M2.8 13.6a5.4 5.4 0 0 1 10.4 0" stroke="#3d3d44" stroke-width="1.6" stroke-linecap="round"/></svg><span style="font-size:13px;font-weight:600">Browsing public songs — read-only</span>
+  </div>
+  <div style="font-size:11.5px;color:#6e6e73;line-height:1.5">You’re signed out, so only the public catalogue is shown. Analysis still works; exporting to TheStageBee needs a signed-in account with write access.</div>
+  <span class="btn btn-sm" style="background:#1d1d1f;border-color:#000;color:#fff;align-self:flex-start"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M11.1 8.5c0-1.7 1.4-2.5 1.4-2.5A3.5 3.5 0 0 0 9.8 4.7c-1.1-.1-2.1.6-2.7.6-.6 0-1.5-.6-2.4-.6A3.6 3.6 0 0 0 1.7 6.5c-1.3 2.2-.3 5.5.9 7.3.6.9 1.3 1.9 2.3 1.8.9 0 1.3-.6 2.4-.6s1.4.6 2.4.6 1.6-.9 2.2-1.8a8 8 0 0 0 1-2.1 3.2 3.2 0 0 1-1.8-3.2ZM9.4 3.2A3.2 3.2 0 0 0 10.2 1a3.3 3.3 0 0 0-2.1 1.1 3 3 0 0 0-.8 2.2 2.7 2.7 0 0 0 2.1-1.1Z" fill="#fff" transform="scale(.95) translate(.4 .2)"/></svg> Sign in with Apple</span>
+  <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+    <span class="btn btn-sm" style="opacity:.45"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M8 10V2.6M5 5.2 8 2.2l3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.8 10.4v1.8a1.4 1.4 0 0 0 1.4 1.4h7.6a1.4 1.4 0 0 0 1.4-1.4v-1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg> Export to TheStageBee…</span>
+    <span class="hint">the export button says why it’s off, instead of failing later</span>
+  </div></div>
+</div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+  <div style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#98989e">Missing tools → readiness panel</div>
+  <div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1">
+  <div style="font-size:13px;font-weight:600">Environment check <span style="font-size:10.5px;color:#98989e;font-weight:400">· runs at launch and before every job</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="mono" style="font-size:11.5px;font-weight:600">yt-dlp</span><span class="stgmeta">2025.08.11 · /opt/homebrew/bin</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="mono" style="font-size:11.5px;font-weight:600">ffmpeg</span><span class="stgmeta">7.1 · /opt/homebrew/bin</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="mono" style="font-size:11.5px;font-weight:600">ffprobe</span><span class="stgmeta">7.1 · /opt/homebrew/bin</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#e5372e"/><path d="M5.7 5.7 10.3 10.3M10.3 5.7 5.7 10.3" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg><span class="mono" style="font-size:11.5px;font-weight:600">deno</span><span class="stgmeta">not found — needed for YouTube downloads</span></div>
+  <div class="mono" style="font-size:10.5px;background:#f4f4f7;border:1px solid #e6e6ea;border-radius:7px;padding:7px 10px">brew install deno</div>
+  <span class="btn btn-sm" style="align-self:flex-start"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M13 8a5 5 0 1 1-1.5-3.6" stroke="#3d3d44" stroke-width="1.7" stroke-linecap="round"/><path d="M11.6 1.6v2.9h-2.9" stroke="#3d3d44" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Check again</span></div>
+</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

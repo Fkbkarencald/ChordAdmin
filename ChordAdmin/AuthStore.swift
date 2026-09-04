@@ -21,7 +21,9 @@ final class AuthStore: NSObject, ObservableObject {
     override init() {
         super.init()
         authListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            Task { @MainActor in
+            // The inner task takes its own weak reference rather than reading the
+            // outer closure's captured variable, which is an error in Swift 6.
+            Task { @MainActor [weak self] in
                 self?.user = user
             }
         }
@@ -34,6 +36,13 @@ final class AuthStore: NSObject, ObservableObject {
     }
 
     var isSignedIn: Bool { user != nil }
+
+    /// The signed-in account's email, so views can show it without importing
+    /// FirebaseAuth themselves.
+    var accountEmail: String? {
+        guard let email = user?.email, !email.isEmpty else { return nil }
+        return email
+    }
 
     func signInWithApple() {
         let nonce = randomNonceString()

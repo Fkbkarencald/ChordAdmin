@@ -15,23 +15,22 @@ final class FirebaseSongStore: ObservableObject {
         errorMessage = nil
 
         do {
-            let snapshot = try await db.collection("songs")
-                .order(by: "title")
-                .getDocuments()
+            // Deliberately unordered: Firestore excludes documents that lack the
+            // ordering field, so ordering by title here silently hid every song
+            // with no title — they never even reached the client to be counted.
+            let snapshot = try await db.collection("songs").getDocuments()
 
             let result = decodeSongs(from: snapshot)
-            songs = result.songs
+            songs = Self.sorted(result.songs)
             errorMessage = result.message
             print("Loaded \(result.songs.count) songs from Firestore songs collection.")
         } catch {
             if isPermissionDenied(error) {
                 do {
-                    let publicSnapshot = try await db.collection("publicSongs")
-                        .order(by: "title")
-                        .getDocuments()
+                    let publicSnapshot = try await db.collection("publicSongs").getDocuments()
 
                     let result = decodeSongs(from: publicSnapshot)
-                    songs = result.songs
+                    songs = Self.sorted(result.songs)
 
                     let fallbackMessage: String
                     if let decodeMessage = result.message {
@@ -72,10 +71,23 @@ final class FirebaseSongStore: ObservableObject {
         if decodeFailures.isEmpty {
             message = nil
         } else {
-            message = "Loaded \(decodedSongs.count) songs; skipped \(decodeFailures.count) document(s) with unexpected fields."
+            // Name them. The IDs were already collected and then thrown away,
+            // leaving the user told that songs were skipped but not which — so
+            // there was no way to go and fix the documents.
+            let named = decodeFailures.prefix(5).joined(separator: ", ")
+            let rest = decodeFailures.count > 5 ? " and \(decodeFailures.count - 5) more" : ""
+            message = "Loaded \(decodedSongs.count) songs. Skipped \(decodeFailures.count) "
+                + (decodeFailures.count == 1 ? "document" : "documents")
+                + " that could not be read: \(named)\(rest)."
         }
 
         return (decodedSongs, message)
+    }
+
+    /// Title order, the way the list used to be sorted server-side, but without
+    /// dropping the songs that have no title.
+    private static func sorted(_ songs: [FirebaseSong]) -> [FirebaseSong] {
+        songs.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
     private func isPermissionDenied(_ error: Error) -> Bool {

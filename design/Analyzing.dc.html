@@ -1,0 +1,227 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;background:#e9e9ee;color:#1d1d1f;-webkit-font-smoothing:antialiased}
+a{color:#0a63d6}a:hover{color:#084eab}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.win{width:1440px;height:900px;display:flex;flex-direction:column;background:#fff;border-radius:10px;overflow:hidden;position:relative}
+.toolbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:10px;padding:0 14px;background:linear-gradient(#fafafa,#f1f1f4);border-bottom:1px solid #d9d9de}
+.lights{display:flex;gap:8px;margin-right:4px}
+.light{width:12px;height:12px;border-radius:50%}
+.tbtn{width:30px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#5c5c63}
+.btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:6px;font-size:12px;font-weight:500;background:linear-gradient(#fff,#f6f6f8);border:1px solid #cfcfd4;box-shadow:0 .5px 1px rgba(0,0,0,.06);color:#1d1d1f;white-space:nowrap}
+.btn-primary{background:linear-gradient(#2f8bff,#0a6cf5);border:1px solid #0a5fd0;color:#fff}
+.btn-sm{height:23px;padding:0 9px;font-size:11px;border-radius:5.5px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:12px;font-size:11px;font-weight:500}
+.body{flex:1;display:flex;min-height:0}
+.sidebar{flex:0 0 264px;display:flex;flex-direction:column;background:#f2f2f6;border-right:1px solid #e0e0e4;min-height:0}
+.search{display:flex;align-items:center;gap:6px;height:28px;margin:10px 12px 8px;padding:0 8px;border-radius:6.5px;background:#e4e4e9;color:#8a8a90;font-size:12px}
+.scope{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 8px}
+.chip{height:21px;padding:0 9px;border-radius:10.5px;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;gap:4px;background:#e4e4e9;color:#55555c}
+.chip-on{background:#4a4a52;color:#fff}
+.slist{flex:1;min-height:0;overflow:hidden;padding:2px 8px;display:flex;flex-direction:column;gap:1px}
+.srow{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px}
+.sname{font-size:12.5px;font-weight:500;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sartist{font-size:10.5px;color:#86868c;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb{width:34px;height:34px;border-radius:5px;flex:0 0 34px;display:flex;align-items:center;justify-content:center}
+.sfoot{border-top:1px solid #e0e0e4;padding:9px 14px;display:flex;flex-direction:column;gap:5px;font-size:10.5px;color:#6e6e73}
+.frow{display:flex;align-items:center;gap:6px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;min-height:0}
+.transport{height:48px;flex:0 0 48px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid #ececf0}
+.stat{height:22px;padding:0 9px;border-radius:11px;background:#f2f2f6;font-size:11px;font-weight:500;color:#48484e;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.waveblock{flex:0 0 132px;border-bottom:1px solid #ececf0;position:relative;background:#fbfbfd;overflow:hidden}
+.chart{flex:1;min-height:0;overflow:hidden;padding:14px 20px 0;display:flex;flex-direction:column;gap:12px;position:relative}
+.sechead{display:flex;align-items:baseline;gap:8px}
+.secname{font-size:13px;font-weight:600}
+.secmeta{font-size:10.5px;color:#98989e}
+.brow{display:flex;gap:10px}
+.bar{flex:1;height:60px;border-radius:8px;background:#f6f6f8;border:1px solid #e7e7ea;position:relative;display:flex;gap:3px;padding:3px}
+.barno{position:absolute;top:2px;left:6px;font-size:8.5px;color:#a4a4aa;font-weight:700;z-index:2;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.seg{flex:1;border-radius:5.5px;background:#fff;border:1px solid #e4e4e8;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#2b2b30}
+.bar-sel{border:1.5px solid #0a6cf5;box-shadow:0 0 0 3px rgba(10,108,245,.14)}
+.bar-act{border:1.5px solid #30b350;background:#f0faf2}
+.bar-chg{border:1.5px dashed #0a6cf5;background:rgba(10,108,245,.045)}
+.pop{position:absolute;display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #d6d6dc;border-radius:9px;padding:5px 6px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:6}
+.popbtn{height:24px;padding:0 9px;border-radius:6px;font-size:11px;font-weight:500;background:#f4f4f7;display:inline-flex;gap:5px;align-items:center;color:#2b2b30;white-space:nowrap}
+.key{font-size:9px;font-weight:700;color:#8a8a90;background:#fff;border:1px solid #d9d9de;border-radius:3px;padding:0 3.5px;line-height:13px}
+.inspector{flex:0 0 296px;background:#f7f7fa;border-left:1px solid #e0e0e4;display:flex;flex-direction:column;min-height:0}
+.segc{display:flex;background:#e4e4e9;border-radius:7px;padding:2px;margin:12px 12px 0;flex:0 0 auto}
+.segi{flex:1;text-align:center;font-size:11px;font-weight:500;padding:4px 0;border-radius:5px;color:#55555c}
+.segi-on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.14);color:#1d1d1f;font-weight:600}
+.ipan{flex:1;min-height:0;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px}
+.grp{background:#fff;border:1px solid #e6e6ea;border-radius:9px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.glabel{font-size:9.5px;font-weight:600;letter-spacing:.07em;color:#8c8c92;text-transform:uppercase}
+.stg{display:flex;align-items:center;gap:8px;font-size:12px;color:#2b2b30}
+.stgmeta{margin-left:auto;font-size:10px;color:#a0a0a6;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.minisegc{display:flex;background:#ececf0;border-radius:6px;padding:2px}
+.minisegi{flex:1;text-align:center;font-size:10.5px;font-weight:500;padding:3px 0;border-radius:4px;color:#55555c}
+.minisegi-on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12);color:#1d1d1f;font-weight:600}
+.crow{display:flex;align-items:center;gap:8px;font-size:12px}
+.hint{font-size:10.5px;color:#98989e;line-height:1.45}
+.card{background:#fff;border:1px solid #e2e2e7;border-radius:11px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+</style>
+</helmet>
+<div class="win">
+  <div class="toolbar">
+  <div class="lights"><span class="light" style="background:#ff5f57;border:.5px solid rgba(0,0,0,.12)"></span><span class="light" style="background:#febc2e;border:.5px solid rgba(0,0,0,.12)"></span><span class="light" style="background:#28c840;border:.5px solid rgba(0,0,0,.12)"></span></div>
+  <div class="tbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><rect x="1.8" y="3" width="12.4" height="10" rx="2" stroke="#5c5c63" stroke-width="1.5"/><path d="M6.3 3v10" stroke="#5c5c63" stroke-width="1.5"/></svg></div>
+  <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+    <div style="font-size:13px;font-weight:600;line-height:1.2">Golden Hour</div>
+    <div style="font-size:10.5px;color:#6e6e73;line-height:1.2;display:flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#dcdce2" stroke-width="2.2"/><path d="M8 2a6 6 0 0 1 5.6 3.9" stroke="#0a6cf5" stroke-width="2.2" stroke-linecap="round"/></svg> <span>Detecting beats — 0:42 elapsed</span></div>
+  </div>
+  <div style="flex:1"></div>
+  <span class="pill" style="background:rgba(10,108,245,.12);color:#0a5fd0"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#0a5fd0" stroke-width="1.6"/><path d="M8 4.8V8l2.2 1.6" stroke="#0a5fd0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> 2 queued</span>
+  <span class="btn" style="color:#e5372e">Cancel</span>
+  <div class="tbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><rect x="1.8" y="3" width="12.4" height="10" rx="2" stroke="#5c5c63" stroke-width="1.5"/><path d="M9.7 3v10" stroke="#5c5c63" stroke-width="1.5"/></svg></div>
+</div>
+  <div class="body">
+    <div class="sidebar">
+  <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="7" cy="7" r="4.4" stroke="#8a8a90" stroke-width="1.7"/><path d="m10.4 10.4 3.2 3.2" stroke="#8a8a90" stroke-width="1.7" stroke-linecap="round"/></svg><span>Search songs</span></div>
+  <div class="scope"><span class="chip chip-on">All<span style="opacity:.65">42</span></span><span class="chip">New<span style="opacity:.65">14</span></span><span class="chip">Analysed<span style="opacity:.65">3</span></span><span class="chip">Edited<span style="opacity:.65">6</span></span><span class="chip">Exported<span style="opacity:.65">19</span></span></div>
+  <div class="slist"><div class="srow" style="background:#0a6cf5">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(28 42% 62%),hsl(16 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#fff">Golden Hour</div>
+      <div class="sartist" style="color:rgba(255,255,255,.75)"><span style="color:rgba(255,255,255,.85)">Detecting beats · stage 7 of 11</span></div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#dcdce2" stroke-width="2.2"/><path d="M8 2a6 6 0 0 1 5.6 3.9" stroke="#0a6cf5" stroke-width="2.2" stroke-linecap="round"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(205 42% 62%),hsl(228 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Paper Lanterns</div>
+      <div class="sartist" style="color:#86868c">Queued · next</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#8a8a90" stroke-width="1.6"/><path d="M8 4.8V8l2.2 1.6" stroke="#8a8a90" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(168 42% 62%),hsl(185 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Undertow</div>
+      <div class="sartist" style="color:#86868c">Queued</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#8a8a90" stroke-width="1.6"/><path d="M8 4.8V8l2.2 1.6" stroke="#8a8a90" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(262 42% 62%),hsl(280 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Midnight Parade</div>
+      <div class="sartist" style="color:#86868c">Junie West</div>
+    </div>
+    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#0a6cf5"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(95 42% 62%),hsl(120 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Salt &amp; Cedar</div>
+      <div class="sartist" style="color:#86868c">Field Notes</div>
+    </div>
+    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#0a6cf5"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(200 42% 62%),hsl(218 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Wintering</div>
+      <div class="sartist" style="color:#86868c">Aya Rowe</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#b9b9c0" stroke-width="1.8" stroke-dasharray="2.6 2.9"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(330 42% 62%),hsl(350 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Second Story</div>
+      <div class="sartist" style="color:#86868c">The Hollow Suns</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#b9b9c0" stroke-width="1.8" stroke-dasharray="2.6 2.9"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(180 42% 62%),hsl(200 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Glasshouse</div>
+      <div class="sartist" style="color:#86868c">Vale</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#b9b9c0" stroke-width="1.8" stroke-dasharray="2.6 2.9"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(0 42% 62%),hsl(0 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0; opacity:.55;">
+      <div class="sname" style="color:#1d1d1f">Meridian</div>
+      <div class="sartist" style="color:#86868c">No YouTube link</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6.4 9.6 9.6 6.4" stroke="#a0a0a6" stroke-width="1.5" stroke-linecap="round"/><path d="M7.3 4.5 8.6 3.2a2.6 2.6 0 0 1 3.7 3.7L11 8.2M8.7 11.5 7.4 12.8a2.6 2.6 0 0 1-3.7-3.7l1.3-1.3" stroke="#a0a0a6" stroke-width="1.5" stroke-linecap="round"/><path d="m2.5 2.5 11 11" stroke="#a0a0a6" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div><div class="srow">
+    <div class="thumb" style="background:linear-gradient(135deg,hsl(48 42% 62%),hsl(30 48% 44%))"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M6 12.2V3.4l6-1.2v8.6" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.4" cy="12.3" r="1.8" fill="rgba(255,255,255,.9)"/><circle cx="10.4" cy="10.9" r="1.8" fill="rgba(255,255,255,.9)"/></svg></div>
+    <div style="flex:1;min-width:0;">
+      <div class="sname" style="color:#1d1d1f">Ninety-Nine</div>
+      <div class="sartist" style="color:#86868c">Junie West</div>
+    </div>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#b9b9c0" stroke-width="1.8" stroke-dasharray="2.6 2.9"/></svg>
+  </div></div>
+  <div class="sfoot"><div class="frow"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" fill="#28a745"/></svg><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-weight:500;color:#3d3d44">Backend</span>&nbsp;<span class="mono" style="font-size:10px">localhost:5051</span></span></div><div class="frow"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M3 8.5 6.4 12 13 4.5" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tools OK <span style="opacity:.7">· yt-dlp · ffmpeg · deno</span></span></div><div class="frow"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="5.2" r="2.8" stroke="#6e6e73" stroke-width="1.6"/><path d="M2.8 13.6a5.4 5.4 0 0 1 10.4 0" stroke="#6e6e73" stroke-width="1.6" stroke-linecap="round"/></svg><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">you@example.com</span><span style="margin-left:auto;color:#0a6cf5;font-weight:500">Sign out</span></div></div>
+</div>
+    <div class="main">
+      <div class="transport">
+  <div style="width:30px;height:30px;border-radius:50%;background:#0a6cf5;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M4.5 2.8v10.4L13 8Z" fill="#fff"/></svg></div>
+  <span class="mono" style="font-size:12px;color:#3d3d44">–:–&nbsp;/&nbsp;2:28.4</span>
+  <div style="width:1px;height:20px;background:#e6e6ea;margin:0 2px"></div>
+  <span class="stat"><span style="color:#98989e">BPM pending</span></span><span class="stat">2:28.4 audio</span>
+  <div style="flex:1"></div>
+  <span></span>
+</div>
+      <div class="waveblock" style="display:flex;align-items:center;justify-content:center">
+  <div style="display:flex;flex-direction:column;gap:8px;width:420px">
+    <div style="display:flex;justify-content:space-between;font-size:11.5px;color:#6e6e73">
+      <span style="font-weight:500;color:#1d1d1f">Audio ready — waiting on beat analysis</span>
+      <span class="mono" style="font-size:10.5px">analysis.wav · 25.1 MB</span>
+    </div>
+    <div style="height:5px;border-radius:2.5px;background:#e8e8ec;overflow:hidden">
+      <div style="width:58%;height:5px;background:#0a6cf5;border-radius:2.5px"></div>
+    </div>
+    <div style="font-size:10.5px;color:#98989e">Stages 1–6 done · beat detection running on localhost:5051</div>
+  </div>
+</div>
+      <div class="chart">
+  <div style="display:flex;flex-direction:column;gap:8px;opacity:.6">
+    <div style="width:120px;height:13px;border-radius:6.5px;background:#ececf0"></div>
+    <div class="brow"><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div></div>
+    <div class="brow"><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;opacity:.35">
+    <div style="width:160px;height:13px;border-radius:6.5px;background:#ececf0"></div>
+    <div class="brow"><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div><div class="bar" style="background:#f2f2f5;border-color:#ebebef"><div class="seg" style="background:#ececf0;border-color:#ececf0"></div></div></div>
+  </div>
+  <div style="text-align:center;font-size:11.5px;color:#98989e;padding-top:6px">
+    The chart fills in as analysis completes — the layout never jumps around.
+  </div>
+</div>
+    </div>
+    <div class="inspector"><div class="segc"><span class="segi">Bar</span><span class="segi">Tuning</span><span class="segi segi-on">Analysis</span><span class="segi">Info</span></div><div class="ipan">
+<div class="grp" style="gap:9px">
+  <div class="glabel">Pipeline — Golden Hour</div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tools check</span><span class="stgmeta">0.2s</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download audio</span><span class="stgmeta">0:12</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Convert to WAV</span><span class="stgmeta">0:03</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Read metadata</span><span class="stgmeta">0.4s</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><path d="M8 2 14.5 13.2H1.5Z" fill="#f59300"/><path d="M8 6.2v3.2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".9" fill="#fff"/></svg><span>Audio health</span><span class="stgmeta">0.9s</span></div><div style="display:flex;gap:8px;font-size:10.5px;color:#f59300;padding-left:21px;line-height:1.4">Very quiet audio (−38 dB mean) — chords may be less reliable</div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6.6" fill="#28a745"/><path d="M5.2 8.3 7.2 10.3 10.9 5.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Backend check</span><span class="stgmeta">0.1s</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#dcdce2" stroke-width="2.2"/><path d="M8 2a6 6 0 0 1 5.6 3.9" stroke="#0a6cf5" stroke-width="2.2" stroke-linecap="round"/></svg><span><span style="font-weight:600">Detect beats</span></span><span class="stgmeta">0:42…</span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#d4d4da" stroke-width="1.8"/></svg><span><span style="color:#a0a0a6">Beat grid</span></span><span class="stgmeta"></span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#d4d4da" stroke-width="1.8"/></svg><span><span style="color:#a0a0a6">Recognise chords</span></span><span class="stgmeta"></span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#d4d4da" stroke-width="1.8"/></svg><span><span style="color:#a0a0a6">Build chart</span></span><span class="stgmeta"></span></div>
+  <div class="stg"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto"><circle cx="8" cy="8" r="6" stroke="#d4d4da" stroke-width="1.8"/></svg><span><span style="color:#a0a0a6">Detect sections</span></span><span class="stgmeta"></span></div>
+</div>
+<div class="grp">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <span class="glabel" style="text-transform:none;font-size:11px;letter-spacing:0">Log</span>
+    <span style="font-size:10.5px;color:#0a6cf5;font-weight:500">Show ▸</span>
+  </div>
+  <div class="hint">Full yt-dlp / ffmpeg / backend output, per stage.</div>
+</div>
+<div style="flex:1"></div>
+<span class="btn" style="justify-content:center;color:#e5372e">Cancel analysis</span>
+<div class="hint" style="text-align:center">Keeps everything already downloaded.</div>
+</div></div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
