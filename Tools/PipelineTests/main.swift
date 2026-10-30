@@ -1950,6 +1950,8 @@ check(perPreviewMs < 120,
 await runImportReviewTests()
 runBeatAlignmentTests()
 runAudioStructureTests()
+runSongFormTests()
+runSongFormCorpusTests()
 await runTimingIntegrationTests()
 
 // MARK: - Summary

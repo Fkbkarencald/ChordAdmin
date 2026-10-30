@@ -1,0 +1,1116 @@
+{
+ "key": "E",
+ "sections": [
+  {
+   "title": "Intro 1",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E5"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#5"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A5"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B5"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Intro 2",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Verse 1",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "F#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A@"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Verse 2",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "F#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A@"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Chorus 1",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 3fr",
+     "chords": [
+      "A",
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Verse 3",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "F#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A@"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Verse 4",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "F#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A@"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Chorus 2",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 3fr",
+     "chords": [
+      "A",
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Instrumental - Guitar Solo",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 3fr",
+     "chords": [
+      "A",
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Bridge",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "F#"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Verse 5",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "F#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A@"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Chorus 3",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 3fr",
+     "chords": [
+      "A",
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Chorus 4",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Tag",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "E"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Ending",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "B"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "C#M"
+     ],
+     "hold": false
+    }
+   ]
+  }
+ ]
+}

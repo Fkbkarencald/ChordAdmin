@@ -795,11 +795,21 @@ final class JobManager: ObservableObject {
         // — Build chart —
         try await stage(.chart, job: &job, songID: songID, folder: folder) { job in
             job.status = .generatingChordChart
-            guard let gridPath = job.beatGridPath,
-                  let cleanedPath = job.chordCleanedPath,
-                  let gridData = try? Data(contentsOf: URL(fileURLWithPath: gridPath)),
-                  let cleanedData = try? Data(contentsOf: URL(fileURLWithPath: cleanedPath)) else {
+            guard var gridPath = job.beatGridPath,
+                  var cleanedPath = job.chordCleanedPath,
+                  var gridData = try? Data(contentsOf: URL(fileURLWithPath: gridPath)),
+                  var cleanedData = try? Data(contentsOf: URL(fileURLWithPath: cleanedPath)) else {
                 throw JobError.backendRejected("Beat grid or chord data is missing")
+            }
+            // The form decides where bars fall, with an odd-length bar where the
+            // music has one, so its grid replaces the uniform one.
+            job.songFormPath = nil
+            job.songKey = nil
+            if let beatPath = job.beatDetectionPath,
+               let beatData = try? Data(contentsOf: URL(fileURLWithPath: beatPath)),
+               let formed = Self.applyForm(job: &job, folder: folder, beatData: beatData, cleanedData: cleanedData) {
+                (gridPath, gridData, cleanedPath, cleanedData) = formed
+                self.appendLog("Form: \(job.songKey ?? "—"), \(job.barCount ?? 0) bars\n", songID: songID, folder: folder)
             }
             try Self.buildCharts(
                 job: &job, folder: folder,
@@ -820,9 +830,11 @@ final class JobManager: ObservableObject {
             job.status = .detectingSections
             guard let performerPath = job.chordChartPerformerPath,
                   let draftPath = job.chordChartDraftPath,
-                  let performerData = try? Data(contentsOf: URL(fileURLWithPath: performerPath)) else {
+                  let initialPerformerData = try? Data(contentsOf: URL(fileURLWithPath: performerPath)) else {
                 throw JobError.backendRejected("Performer chart is missing")
             }
+            // Replaced if the form is read again with vocal timing below.
+            var performerData = initialPerformerData
             let candidatesPath = folder.appendingPathComponent("section.candidates.json").path
             let sectionsURL = folder.appendingPathComponent("sections.json")
             let sectionsBeforeAnalysis = try? Data(contentsOf: sectionsURL)
@@ -830,9 +842,24 @@ final class JobManager: ObservableObject {
                 performerData: performerData, performerPath: performerPath, draftPath: draftPath
             )
             var structureWarning: String?
+            // With a form, the sections come from the song's repeats; the
+            // acoustic evidence is still gathered for the suggestions panel.
+            var form = Self.loadForm(job: job)
             do {
                 if let evidence = try await Self.requestAudioStructure(wavURL: wavURL, performerData: performerData) {
-                            guard let enriched = Self.addingAudioBoundaries(evidence, to: candPayload, performerData: performerData) else {
+                    // Where singing starts and stops helps place sections. Read the
+                    // form again with it, unless the owner has started editing.
+                    if form != nil, self.jobs[songID]?.lastEditedAt == nil,
+                       (try? Data(contentsOf: sectionsURL)) == sectionsBeforeAnalysis,
+                       let vocals = SongForm.vocals(fromStructure: evidence),
+                       let refreshed = try Self.reapplyForm(job: &job, folder: folder, vocals: vocals) {
+                        form = refreshed.form
+                        performerData = refreshed.performerData
+                        (candPayload, candCount, candPreview) = Self.detectSectionCandidates(
+                            performerData: performerData, performerPath: performerPath, draftPath: draftPath)
+                        self.appendLog("Form with vocals: \(job.barCount ?? 0) bars\n", songID: songID, folder: folder)
+                    }
+                    guard let enriched = Self.addingAudioBoundaries(evidence, to: candPayload, performerData: performerData) else {
                         throw JobError.backendRejected("Audio section analysis returned unusable boundaries")
                     }
                     let path = folder.appendingPathComponent("audio.structure.json")
@@ -859,10 +886,14 @@ final class JobManager: ObservableObject {
             let currentSections = try? Data(contentsOf: sectionsURL)
             let ownerHasEdited = self.jobs[songID]?.lastEditedAt != nil
             let sectionsChangedDuringAnalysis = currentSections != sectionsBeforeAnalysis
-            let (sectionsPayload, sectionCount) = Self.generateInitialSections(
+            var (sectionsPayload, sectionCount) = Self.generateInitialSections(
                 performerData: performerData, candidatesPayload: candPayload,
                 performerPath: performerPath, candidatesPath: candidatesPath
             )
+            if let form, let formSections = Self.sectionsFromForm(form, performerData: performerData) {
+                sectionsPayload = formSections
+                sectionCount = (formSections["sections"] as? [Any])?.count ?? 0
+            }
             if (ownerHasEdited || sectionsChangedDuringAnalysis),
                let currentSections, let saved = try? JSONDecoder().decode(SectionsFile.self, from: currentSections) {
                 job.sectionsPath = sectionsPath
@@ -1339,6 +1370,9 @@ final class JobManager: ObservableObject {
         if let beatsPerBar { job.beatsPerBarOverride = beatsPerBar == 4 ? nil : beatsPerBar }
         if let halved { job.tempoHalved = halved }
         if let manualBpm { job.manualBpm = manualBpm }
+        // Retuning by hand puts every bar back on a uniform grid; the form's
+        // bar lengths no longer describe the chart. Its key still holds.
+        job.songFormPath = nil
 
         let settings = Self.gridSettings(for: job, beatData: beatData)
         let (gridPayload, barCount) = Self.generateBeatGrid(

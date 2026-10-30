@@ -99,13 +99,13 @@ run_test() {
   swiftc -o "$BUILD/pipeline-tests" "${SWIFT_FLAGS[@]}" \
     "$APP/LocalAnalysisRuntime.swift" "$APP/AnalysisJob.swift" "$APP/PipelineStage.swift" "$APP/ToolChecker.swift" \
     "$APP/ProcessRunner.swift" "$APP/LocalFileStore.swift" "$APP/JobManager.swift" \
-    "$APP/ChartGeneration.swift" "$APP/BeatAlignment.swift" "$APP/AudioStructure.swift" "$APP/ChartNavigation.swift" "$APP/SectionStore.swift" \
+    "$APP/ChartGeneration.swift" "$APP/BeatAlignment.swift" "$APP/AudioStructure.swift" "$APP/SongForm.swift" "$APP/SongFormIntegration.swift" "$APP/ChartNavigation.swift" "$APP/SectionStore.swift" \
     "$APP/FirebaseSong.swift" "$APP/StageBeeExportService.swift" \
     "$APP/SongImportStaging.swift" "$APP/SongImportPayload.swift" "$APP/SongImportWorkspace.swift" "$APP/SongImportProcessing.swift" \
     "$APP/WorkspaceState.swift" "$APP/Library.swift" "$APP/AppCommands.swift" "$APP/DesignKit.swift" \
     $(link_flags) \
     "$TOOLS_DIR/PipelineTests/FakeBackend.swift" "$TOOLS_DIR/PipelineTests/ImportReviewTests.swift" \
-    "$TOOLS_DIR/PipelineTests/BeatAlignmentTests.swift" "$TOOLS_DIR/PipelineTests/AudioStructureTests.swift" \
+    "$TOOLS_DIR/PipelineTests/BeatAlignmentTests.swift" "$TOOLS_DIR/PipelineTests/AudioStructureTests.swift" "$TOOLS_DIR/PipelineTests/SongFormTests.swift" \
     "$TOOLS_DIR/PipelineTests/TimingIntegrationTests.swift" \
     "$TOOLS_DIR/PipelineTests/main.swift" || return 1
   # Never point the file store at the real Application Support data, and never
@@ -220,7 +220,7 @@ run_real() {
   swiftc -o "$BUILD/real-run" "${SWIFT_FLAGS[@]}" \
     "$APP/LocalAnalysisRuntime.swift" "$APP/AnalysisJob.swift" "$APP/PipelineStage.swift" "$APP/ToolChecker.swift" \
     "$APP/ProcessRunner.swift" "$APP/LocalFileStore.swift" "$APP/JobManager.swift" \
-    "$APP/ChartGeneration.swift" "$APP/BeatAlignment.swift" "$APP/AudioStructure.swift" "$APP/ChartNavigation.swift" "$APP/SectionStore.swift" \
+    "$APP/ChartGeneration.swift" "$APP/BeatAlignment.swift" "$APP/AudioStructure.swift" "$APP/SongForm.swift" "$APP/SongFormIntegration.swift" "$APP/ChartNavigation.swift" "$APP/SectionStore.swift" \
     "$APP/FirebaseSong.swift" "$APP/StageBeeExportService.swift" \
     "$APP/SongImportStaging.swift" "$APP/SongImportPayload.swift" "$APP/SongImportWorkspace.swift" "$APP/SongImportProcessing.swift" \
     "$APP/WorkspaceState.swift" "$APP/Library.swift" "$APP/AppCommands.swift" \

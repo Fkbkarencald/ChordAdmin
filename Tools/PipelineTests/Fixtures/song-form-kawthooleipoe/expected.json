@@ -1,0 +1,569 @@
+{
+ "key": "G",
+ "sections": [
+  {
+   "title": "Intro",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 3fr",
+     "chords": [
+      "D",
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 2fr 1fr",
+     "chords": [
+      "G",
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "3fr 1fr",
+     "chords": [
+      "D",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 3fr",
+     "chords": [
+      "D",
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Chorus 1",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "BM7",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "AM7",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Verse 1",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "G",
+      "D/F#"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "AM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "BM7",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Chorus 2",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "BM7",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "AM7",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Instrumental",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "BM7",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "AM7",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Verse 2",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "G",
+      "D/F#"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "AM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "BM7",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Chorus 3",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "BM7",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "AM7",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Chorus 4",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "BM7",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "AM7",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Outro",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "BM7",
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "AM7",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "G",
+      "EM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "AM7",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "C",
+      "CM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "G"
+     ],
+     "hold": false
+    }
+   ]
+  }
+ ]
+}

@@ -568,10 +568,11 @@ let exportPreview = ExportPreview(
     newSections: sectionSpec.enumerated().map { index, spec in
         ExportPreviewSection(index: index, name: spec.0, barCount: spec.2 - spec.1 + 1)
     },
-    sectionsPayload: [], tempoPayload: 136
+    sectionsPayload: [], tempoPayload: 136,
+    currentKey: "C", newKey: "Em"
 )
 
-render("export-sheet", size: CGSize(width: 560, height: 520)) {
+render("export-sheet", size: CGSize(width: 560, height: 540)) {
     ExportSheet(preview: exportPreview, isExporting: false, errorMessage: nil,
                 onCancel: {}, onConfirm: {})
 }

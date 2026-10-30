@@ -36,8 +36,12 @@ struct ExportSheet: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(preview.isNewImport ? "Publish to TheStageBee" : "Export to TheStageBee")
                 .scaledFont(size: 15, weight: .bold, relativeTo: .body)
-            Text(preview.isNewImport ? "Creates a new song with the reviewed title, artist, key, link and chord chart." : "Updates the existing song document — only the sections and the tempo are written. "
-                 + "Title, key, artists and links are not touched.")
+            Text(preview.isNewImport ? "Creates a new song with the reviewed title, artist, key, link and chord chart."
+                 : preview.newKey != nil
+                 ? "Updates the existing song document — the sections, the tempo and the key are written. "
+                   + "Title, artists and links are not touched."
+                 : "Updates the existing song document — only the sections and the tempo are written. "
+                   + "Title, key, artists and links are not touched.")
                 .scaledFont(size: 11.5, relativeTo: .caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -103,6 +107,7 @@ struct ExportSheet: View {
         PanelCard(padding: 12) {
             GroupLabel(preview.isNewImport ? "Chart to publish" : "This will overwrite")
             tempoRow
+            if !preview.isNewImport, let newKey = preview.newKey { keyRow(newKey) }
             sectionsRow
         }
     }
@@ -132,6 +137,25 @@ struct ExportSheet: View {
                     .foregroundStyle(.secondary)
             }
 
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// The key the form analysis found, beside the document's current one.
+    private func keyRow(_ newKey: String) -> some View {
+        HStack(spacing: 8) {
+            fieldLabel("Key")
+            if preview.keyChanged {
+                Text(preview.currentKey.flatMap { $0.isEmpty ? nil : $0 } ?? "—")
+                    .scaledFont(size: 12, design: .monospaced, relativeTo: .footnote)
+                    .foregroundStyle(.tertiary)
+                    .strikethrough(true, color: .secondary)
+                Image(systemName: "arrow.right")
+                    .scaledFont(size: 9, weight: .semibold, relativeTo: .caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            Text(newKey)
+                .scaledFont(size: 12, weight: .bold, design: .monospaced, relativeTo: .footnote)
             Spacer(minLength: 0)
         }
     }

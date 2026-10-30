@@ -54,6 +54,12 @@ struct ExportPreview: Identifiable {
 
     var tempoChanged: Bool { currentTempo != newTempo }
 
+    /// The key the song's form analysis found; nil when the analysis has none,
+    /// and then the document's key is left alone.
+    var currentKey: String? = nil
+    var newKey: String? = nil
+    var keyChanged: Bool { newKey != nil && currentKey != newKey }
+
     var summary: String {
         "\(newSections.count) sections"
             + (newTempo.map { ", \($0) BPM" } ?? "")
@@ -156,10 +162,12 @@ final class StageBeeExportService: ObservableObject {
         }
         state = .exporting
         do {
-            try await db.collection("songs").document(preview.documentID).updateData([
+            var fields: [String: Any] = [
                 "sections": preview.sectionsPayload,
                 "tempo": preview.tempoPayload,
-            ])
+            ]
+            if let key = preview.newKey, !key.isEmpty { fields["key"] = key }
+            try await db.collection("songs").document(preview.documentID).updateData(fields)
             state = .success(documentID: preview.documentID)
             return ExportRecord(
                 exportedAt: Date(),
@@ -249,8 +257,15 @@ final class StageBeeExportService: ObservableObject {
             throw ExportError.backendRejected("The translation returned a tempo that is not a number")
         }
 
+        // Bars the song's form made longer or shorter than the meter (a 6/4 in
+        // a 4/4 song) — the translator writes every bar in the meter.
+        var stageBeeSections = sections
+        if let form = JobManager.loadForm(job: job) {
+            stageBeeSections = Self.applyingFormMeter(to: sections, form: form)
+        }
+
         // 2 — Describe what will change ------------------------------------------
-        let newSections = Self.describeSections(sections)
+        let newSections = Self.describeSections(stageBeeSections)
         guard !newSections.isEmpty else {
             throw ExportError.backendRejected("The translation produced no sections")
         }
@@ -265,12 +280,14 @@ final class StageBeeExportService: ObservableObject {
             newTempo: tempoValue,
             currentSectionNames: song.sections?.map { $0.displayName } ?? [],
             newSections: newSections,
-            sectionsPayload: sections,
+            sectionsPayload: stageBeeSections,
             // The validated integer, not the raw payload: the sheet promises
             // "136 BPM", and writing the backend's 136.4 back would make the
             // confirmation a lie about what was actually stored. The document's
             // own `tempo` is an Int, so this also keeps the field's type stable.
-            tempoPayload: tempoValue
+            tempoPayload: tempoValue,
+            currentKey: song.key,
+            newKey: job.songKey
         )
     }
 

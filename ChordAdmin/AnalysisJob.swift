@@ -294,6 +294,12 @@ nonisolated struct AnalysisJob: Codable, Identifiable, Sendable {
     /// whole chart, not the eight-bar preview — the preview count reported a
     /// clean run for a song that was half "N.C.".
     var barsWithoutChords: Int?
+    /// The song's form (sections, bar lengths, key) read from its repeats.
+    /// When set, the beat grid and sections came from it rather than a
+    /// uniform grid; manual retuning clears it.
+    var songFormPath: String?
+    /// The key the form analysis found, in TheStageBee's spelling ("Em", "Db").
+    var songKey: String?
 
     // — Progress, edits and export —
     var stages: [StageRecord]?
