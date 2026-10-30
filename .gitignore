@@ -88,3 +88,12 @@ Tools/.render-output-scale*/
 # Seeded design canvas — 2.7MB of generated editor payload.
 # Regenerate with design/build.py plus the design skill's seed helper.
 design/chordadmin-redesign.html
+
+# Generated self-contained runtime and packaging caches
+Tools/.runtime-packager/
+Tools/.runtime-build/
+Tools/.runtime-dist/
+Tools/.runtime-downloads/
+
+# Python packaging/test bytecode
+__pycache__/

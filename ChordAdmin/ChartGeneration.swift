@@ -368,6 +368,14 @@ extension JobManager {
         let allBars = rawBars.compactMap { $0["bar"] as? Int }.sorted()
         guard !allBars.isEmpty else { return ([:], 0) }
 
+        if let sections = sectionsFromAudioBoundaries(candidatesPayload, allBars: allBars),
+           let encoded = try? JSONEncoder().encode(sections),
+           let raw = try? JSONSerialization.jsonObject(with: encoded) as? [[String: Any]] {
+            return (["source": ["chordChartPerformerPath": performerPath,
+                                 "sectionCandidatesPath": candidatesPath],
+                     "sections": raw], sections.count)
+        }
+
         // Parse candidates from payload
         let rawCands = candidatesPayload["candidates"] as? [[String: Any]] ?? []
         struct Cand { var label: String; var startBar: Int; var endBar: Int

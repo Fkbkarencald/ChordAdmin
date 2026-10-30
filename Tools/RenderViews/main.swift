@@ -583,3 +583,39 @@ render("export-sheet-error", size: CGSize(width: 560, height: 560)) {
 }
 
 print("done")
+
+
+// Import-review cards and publication use the same design primitives and scale.
+let importActor = SongImportReviewer(id: "render-owner", name: "Owner", canReview: true)
+let importSource = SongImportSource(url: "https://youtu.be/AbC_dEf-123")
+let importFields = SongImportFields(title: "Golden Hour", artist: "The Ensemble", key: "C", link: importSource.url)
+var importRecord = SongImportRecord.staged(id: "render-import", source: importSource, detectedFields: importFields, actor: importActor)
+try? importRecord.recordStep(.download, state: .succeeded, actor: importActor)
+try? importRecord.recordStep(.conversion, state: .succeeded, actor: importActor)
+try? importRecord.recordStep(.analysis, state: .failed, error: "Analysis backend is unavailable. Start it and resume this import.", actor: importActor)
+render("import-review-failed", size: CGSize(width: 780, height: 520)) {
+    SongImportReviewCard(record: importRecord, busy: false, canPrepare: false,
+        onSave: { _ in }, onReject: {}, onProcess: {}, onOpen: {}, onPrepare: {}, onError: { _ in })
+        .padding(20).frame(width: 780, height: 520, alignment: .top)
+}
+var newSongPreview = exportPreview
+newSongPreview.publication = importRecord
+render("import-publication", size: CGSize(width: 560, height: 570)) {
+    ExportSheet(preview: newSongPreview, isExporting: false, errorMessage: nil, onCancel: {}, onConfirm: {})
+}
+
+
+let largeCatalogue: [LibraryItem] = (1...221).map { number in
+    LibraryItem(song: FirebaseSong(id: "layout-\(number)", storedTitle: "Fixture Song \(number)",
+        key: nil, tempo: nil, artists: nil, link: nil, sections: nil), job: nil, state: .new)
+}
+for (name, size) in [("sidebar-221-compact", CGSize(width: 232, height: 500)),
+                     ("sidebar-221-standard", CGSize(width: 264, height: 640))] {
+    render(name, size: size) {
+        LibrarySidebar(items: largeCatalogue, counts: Library.counts(for: largeCatalogue),
+            filter: .constant(.all), searchText: .constant(""), selection: .constant("layout-219"),
+            isLoading: false, environment: environment, authStore: authStore, queue: [],
+            onSignIn: {}, onSignOut: {}, onRecheckEnvironment: {})
+            .frame(width: size.width, height: size.height)
+    }
+}

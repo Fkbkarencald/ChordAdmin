@@ -90,7 +90,7 @@ struct FrontScreenView: View {
     private var blockedReason: String? {
         var reasons: [String] = []
         if environment.backendAvailable != true {
-            reasons.append("the analysis backend at \(FrontScreenFormat.shortURL(environment.backendURL)) is not reachable")
+            reasons.append("local analysis is not ready; open the analysis status to check startup")
         }
         if environment.tools == nil {
             reasons.append("the tool check has not finished")
@@ -563,6 +563,7 @@ private struct FrontScreenExportedRow: View {
 private struct FrontScreenEnvironmentCard: View {
     @ObservedObject var environment: EnvironmentStore
     @ObservedObject var authStore: AuthStore
+    @ObservedObject private var runtime = LocalAnalysisRuntime.shared
     var onRecheckEnvironment: () -> Void
     var onSignIn: () -> Void
 
@@ -586,7 +587,7 @@ private struct FrontScreenEnvironmentCard: View {
                 .foregroundStyle(backendTint)
             Text(backendTitle)
                 .scaledFont(size: 11.5, relativeTo: .caption)
-            Text(FrontScreenFormat.shortURL(environment.backendURL))
+            Text("Runs on this Mac")
                 .scaledFont(size: 10, design: .monospaced, relativeTo: .caption2)
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
@@ -596,11 +597,7 @@ private struct FrontScreenEnvironmentCard: View {
     }
 
     private var backendTitle: String {
-        switch environment.backendAvailable {
-        case .some(true):  return "Backend running"
-        case .some(false): return "Backend not reachable"
-        case .none:        return "Backend not checked"
-        }
+        runtime.label
     }
 
     private var backendTint: Color {

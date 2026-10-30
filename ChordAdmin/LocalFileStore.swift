@@ -12,11 +12,16 @@ struct LocalFileStore {
            !override.isEmpty {
             return URL(fileURLWithPath: override, isDirectory: true)
         }
+        #if CHORDADMIN_VERIFY
+        // A UI verification build may never hydrate or repair the owner's jobs.
+        return FileManager.default.temporaryDirectory.appendingPathComponent("chordadmin-ui-" + UUID().uuidString)
+        #else
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first!
         return appSupport.appendingPathComponent("ChordAdmin", isDirectory: true)
+        #endif
     }()
 
     static let baseDirectory: URL = supportDirectory.appendingPathComponent("jobs", isDirectory: true)

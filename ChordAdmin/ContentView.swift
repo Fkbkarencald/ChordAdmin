@@ -24,6 +24,11 @@ struct ContentView: View {
     @StateObject private var songStore = FirebaseSongStore()
     @StateObject private var authStore = AuthStore()
     @StateObject private var environment = EnvironmentStore()
+    @StateObject private var importStore = SongImportFirestoreStore()
+    @StateObject private var importProcessing = SongImportProcessing()
+    @State private var showImports = false
+    @State private var pendingImportPublicationID: String?
+    @State private var isPublishingImport = false
     @StateObject private var exportService = StageBeeExportService()
     @StateObject private var sectionStore = SectionStore()
     @StateObject private var audioPlayer = ChordAudioPlayer()
@@ -46,6 +51,7 @@ struct ContentView: View {
     @State private var rawChords: [CleanedChord] = []
 
     // Inspector
+    @SceneStorage("libraryVisible") private var showLibrary: Bool = true
     @SceneStorage("inspectorVisible") private var showInspector: Bool = true
     @SceneStorage("inspectorTab") private var storedInspectorTab: String = InspectorTab.bar.rawValue
     @State private var tuning = TuningDraft()
@@ -87,7 +93,14 @@ struct ContentView: View {
     // MARK: - Derived
 
     private var items: [LibraryItem] {
-        Library.items(songs: songStore.songs, jobManager: jobManager)
+        let libraryIDs = Set(songStore.songs.compactMap(\.id))
+        let downloads = jobManager.jobs.values.compactMap { job -> FirebaseSong? in
+            guard let id = job.songDocumentID, !id.hasPrefix("staging-"),
+                  !libraryIDs.contains(id), job.hasAudio || job.hasChart else { return nil }
+            return FirebaseSong(id: id, storedTitle: job.title, key: nil, tempo: job.bpm.map { Int($0) },
+                                artists: nil, link: job.sourceUrl, sections: nil)
+        }.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        return Library.items(songs: songStore.songs + downloads + importStore.records.filter { $0.status == .staged }.map(\.workspaceSong), jobManager: jobManager)
     }
 
     private var filteredItems: [LibraryItem] {
@@ -97,6 +110,14 @@ struct ContentView: View {
     private var selectedItem: LibraryItem? {
         guard let selection else { return nil }
         return items.first { $0.id == selection }
+    }
+
+    private func importRecord(for id: String) -> SongImportRecord? {
+        importStore.records.first { $0.workspaceID == id && $0.status == .staged }
+    }
+
+    private func processImport(_ record: SongImportRecord, retry: Bool = false, from stage: PipelineStage? = nil, fresh: Bool = false) {
+        importProcessing.start(record, jobs: jobManager, store: importStore, retry: retry, from: stage, fresh: fresh)
     }
 
     private var selectedJob: AnalysisJob? {
@@ -139,8 +160,9 @@ struct ContentView: View {
 
     // MARK: - Body
 
-    var body: some View {
-        NavigationSplitView {
+    private var windowContent: some View {
+        HSplitView {
+            if showLibrary {
             LibrarySidebar(
                 items: filteredItems,
                 counts: Library.counts(for: items),
@@ -155,14 +177,22 @@ struct ContentView: View {
                 onRemoveFromQueue: { jobManager.removeFromQueue($0) },
                 onClearQueue: { jobManager.clearQueue() },
                 onSignIn: { authStore.signInWithApple() },
-                onSignOut: { authStore.signOut() },
+                onSignOut: {
+                    guard importProcessing.activeIDs.isEmpty, !isPublishingImport else {
+                        actionAlert = ActionAlert(title: "Import work is still running", message: "Finish or cancel the import before signing out.")
+                        return
+                    }
+                    authStore.signOut()
+                },
                 onRecheckEnvironment: { Task { await environment.refresh() } },
                 focusSearchToken: searchFocusToken
             )
-            .navigationSplitViewColumnWidth(min: 232, ideal: 264, max: 340)
-        } detail: {
+                .frame(minWidth: 232, idealWidth: 264, maxWidth: 340)
+                .frame(maxHeight: .infinity)
+            }
             detail
-                .inspector(isPresented: $showInspector) {
+                .frame(minWidth: 480, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+            if showInspector {
                     InspectorView(
                         tab: inspectorTabBinding,
                         item: selectedItem,
@@ -186,15 +216,34 @@ struct ContentView: View {
                         onResume: startAnalysis,
                         onRedetectBeats: redetectBeats
                     )
-                    .inspectorColumnWidth(min: 260, ideal: 300, max: 380)
-                }
+                .frame(minWidth: 260, idealWidth: 300, maxWidth: 380)
+                .frame(maxHeight: .infinity)
+            }
         }
-        .frame(minWidth: 1080, minHeight: 640)
+        .frame(minWidth: 1080, minHeight: 560)
         .toolbar { toolbarContent }
+    }
+
+    private var presentedContent: some View {
+        windowContent
+        .sheet(isPresented: $showImports, onDismiss: finishImportReviewSheet) {
+            SongImportReviewQueueView(store: importStore, processing: importProcessing,
+                onProcess: { record, retry in processImport(record, retry: retry) },
+                onOpen: { record in selection = record.workspaceID; storedFilter = LibraryFilter.all.rawValue; showImports = false },
+                onPrepare: { record in
+                    selection = record.workspaceID
+                    storedFilter = LibraryFilter.all.rawValue
+                    pendingImportPublicationID = record.workspaceID
+                    showImports = false
+                },
+                canPrepare: { record in jobManager.job(for: record.workspaceID)?.isExportable == true })
+                .chordAdminTextScale(TextSizeSetting.scale(for: textSize))
+                .task { await importStore.reload() }
+        }
         .sheet(item: $exportPreview) { preview in
             ExportSheet(
                 preview: preview,
-                isExporting: exportService.state == .exporting,
+                isExporting: exportService.state == .exporting || isPublishingImport,
                 errorMessage: exportErrorMessage,
                 onCancel: {
                     exportPreview = nil
@@ -255,13 +304,20 @@ struct ContentView: View {
         } message: {
             Text(actionAlert?.message ?? "")
         }
+    }
+
+    var body: some View {
+        presentedContent
         .task {
             appDelegate?.jobManager = jobManager
             await jobManager.hydrate()
             await environment.refresh()
             if songStore.songs.isEmpty { await songStore.fetchSongs() }
+            if authStore.isSignedIn { await importStore.reload() }
             restoreSelectionIfPossible()
         }
+        .onChange(of: jobManager.jobs.count) { _, _ in restoreSelectionIfPossible() }
+        .onChange(of: importStore.records.count) { _, _ in restoreSelectionIfPossible() }
         .onChange(of: songStore.songs.count) { _, _ in
             // The library arrives asynchronously (and again after signing in),
             // so a one-shot restore in .task usually ran too early.
@@ -271,9 +327,16 @@ struct ContentView: View {
             storedSelection = newValue ?? ""
         }
         .onChange(of: authStore.isSignedIn) { _, isSignedIn in
-            if isSignedIn { Task { await songStore.fetchSongs() } }
+            importStore.reset()
+            importProcessing.cancelAll(jobs: jobManager)
+            exportPreview = nil
+            if isSignedIn { Task { await songStore.fetchSongs(); await importStore.reload() } }
         }
         .task(id: workspaceKey) { await loadWorkspace() }
+        // The chart appears before section detection finishes, so the editor
+        // first holds a provisional single section. The workspace key does not
+        // change when sections land, which left that placeholder on screen.
+        .task(id: sectionsKey) { reloadSectionsIfStale() }
         .onChange(of: previewKey) { _, _ in refreshPreview() }
         // Keyed on the same signals as the workspace: re-detection rewrites
         // beat.detection.json in place, so the path alone never changes.
@@ -327,7 +390,8 @@ struct ContentView: View {
                 onAnalyse: confirmReanalyse,
                 onResume: { item in
                     guard let ref = item.ref else { return }
-                    jobManager.start(ref, resumeIfPossible: true)
+                    if let record = importRecord(for: item.id) { processImport(record) }
+                    else { jobManager.start(ref, resumeIfPossible: true) }
                 },
                 onAnalyseAll: analyseAll,
                 onExport: { item in
@@ -343,7 +407,11 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
+        ToolbarItemGroup(placement: .navigation) {
+            Button { showLibrary.toggle() } label: {
+                Label("Library", systemImage: "sidebar.left")
+            }
+            .help(showLibrary ? "Hide the song library" : "Show the song library")
             if let item = selectedItem {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(item.title)
@@ -356,7 +424,15 @@ struct ContentView: View {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
+            Button { showImports = true } label: {
+                Label("Song imports…", systemImage: "tray.and.arrow.down")
+            }
+            .disabled(!authStore.isSignedIn)
+            .help("Stage a source, review its analysis, and publish a new song")
             if let item = selectedItem {
+                if importRecord(for: item.id) != nil {
+                    StatusPill(text: "Unpublished import", systemImage: "tray", tint: .orange)
+                }
                 if jobManager.isRunning(item.id) {
                     Button(role: .destructive) {
                         jobManager.cancelRun()
@@ -386,7 +462,7 @@ struct ContentView: View {
                         if isPreparingExport {
                             ProgressView().controlSize(.small)
                         } else {
-                            Label("Export to TheStageBee…", systemImage: "square.and.arrow.up")
+                            Label(importRecord(for: item.id) == nil ? "Export to TheStageBee…" : "Review publication…", systemImage: "square.and.arrow.up")
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -440,6 +516,20 @@ struct ContentView: View {
             // stayed dead for a file the app had just finished downloading.
             job?.analysisWavPath ?? job?.originalAudioPath ?? "",
         ].joined(separator: "|")
+    }
+
+    private var sectionsKey: String {
+        let job = selectedJob
+        return [workspaceKey, job?.sectionsPath ?? "", String(job?.sectionCount ?? -1),
+                job?.status.rawValue ?? ""].joined(separator: "|")
+    }
+
+    /// Re-reads the saved sections for the open song. Edits are written as they
+    /// happen, so this only replaces a placeholder with what is on disk.
+    private func reloadSectionsIfStale() {
+        guard let songID = selection, let job = jobManager.job(for: songID),
+              sectionStore.isLoaded(for: job), let folder = jobManager.folder(for: songID) else { return }
+        sectionStore.load(for: job, jobFolder: folder)
     }
 
     private func loadWorkspace() async {
@@ -557,10 +647,10 @@ struct ContentView: View {
 
         return SongActions(
             title: item?.title,
-            canAnalyse: item?.ref != nil && !isRunning
+            canAnalyse: item?.ref != nil && !isRunning && !isPublishingImport && !isPreparingExport
                 && item.map { jobManager.queuePosition(of: $0.id) == nil } ?? false,
             canCancel: isRunning,
-            canExport: (job?.isExportable ?? false) && authStore.isSignedIn && !isPreparingExport,
+            canExport: (job?.isExportable ?? false) && authStore.isSignedIn && !isPreparingExport && !isPublishingImport,
             canPlay: audioPlayer.isLoaded,
             isPlaying: audioPlayer.isPlaying,
             analyse: { if let item { confirmReanalyse(item) } },
@@ -572,9 +662,11 @@ struct ContentView: View {
             revealJobFolder: jobFolderToReveal.map { folder in
                 { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
             },
-            focusSearch: { searchFocusToken += 1 },
+            focusSearch: { showLibrary = true; searchFocusToken += 1 },
             refreshLibrary: { Task { await songStore.fetchSongs() } },
-            recheckEnvironment: { Task { await environment.refresh() } }
+            recheckEnvironment: { Task { await environment.refresh() } },
+            reviewImports: { showImports = true },
+            canReviewImports: authStore.isSignedIn
         )
     }
 
@@ -644,21 +736,27 @@ struct ContentView: View {
 
     private func analyse(_ item: LibraryItem) {
         guard let ref = item.ref else { return }
-        jobManager.start(ref, resumeIfPossible: false)
+        if let record = importRecord(for: item.id) { processImport(record, fresh: true) }
+        else { jobManager.start(ref, resumeIfPossible: false) }
     }
 
     private func analyseAll(_ items: [LibraryItem]) {
-        jobManager.enqueue(items.compactMap(\.ref))
+        for item in items {
+            if let record = importRecord(for: item.id) { processImport(record) }
+            else if let ref = item.ref { jobManager.enqueue([ref]) }
+        }
     }
 
     private func startAnalysis() {
         guard let ref = selectedItem?.ref else { return }
-        jobManager.start(ref, resumeIfPossible: true)
+        if let record = selectedItem.flatMap({ importRecord(for: $0.id) }) { processImport(record) }
+        else { jobManager.start(ref, resumeIfPossible: true) }
     }
 
     private func retryStage(_ stage: PipelineStage) {
         guard let ref = selectedItem?.ref else { return }
-        jobManager.retry(from: stage, for: ref)
+        if let record = selectedItem.flatMap({ importRecord(for: $0.id) }) { processImport(record, retry: true, from: stage) }
+        else { jobManager.retry(from: stage, for: ref) }
     }
 
     private func redetectBeats(minBpm: Double?, maxBpm: Double?, transitionLambda: Double?) {
@@ -715,6 +813,12 @@ struct ContentView: View {
         renamingSection = section
     }
 
+    private func finishImportReviewSheet() {
+        guard let id = pendingImportPublicationID else { return }
+        pendingImportPublicationID = nil
+        if let item = items.first(where: { $0.id == id }) { beginExport(for: item) }
+    }
+
     private func beginExport(for item: LibraryItem) {
         guard let job = item.job,
               let songID = item.song.id,
@@ -724,9 +828,24 @@ struct ContentView: View {
         Task {
             defer { isPreparingExport = false }
             do {
-                exportPreview = try await exportService.prepare(
+                var preview = try await exportService.prepare(
                     job: job, jobFolder: folder, song: item.song, isSignedIn: authStore.isSignedIn
                 )
+                if let staged = importRecord(for: item.id) {
+                    let payload = try SongImportPayload.data(sections: preview.sectionsPayload, tempo: preview.tempoPayload)
+                    let prepared = try await importStore.prepare(staged, payload: payload)
+                    guard jobManager.job(for: songID)?.id == job.id,
+                          jobManager.job(for: songID)?.chartsVersion == job.chartsVersion,
+                          jobManager.job(for: songID)?.lastEditedAt == job.lastEditedAt,
+                          !jobManager.isRunning(songID), !jobManager.isRedetecting(songID) else {
+                        throw SongImportWorkflowError.stalePreview
+                    }
+                    preview.publication = prepared
+                    preview.importChartsVersion = job.chartsVersion
+                    preview.importEditedAt = job.lastEditedAt
+                }
+                guard authStore.isSignedIn else { throw SongImportWorkflowError.permissionDenied }
+                exportPreview = preview
             } catch {
                 exportErrorMessage = error.localizedDescription
                 exportPreview = nil
@@ -735,7 +854,34 @@ struct ContentView: View {
     }
 
     private func confirmExport() {
-        guard let preview = exportPreview else { return }
+        guard let preview = exportPreview, !isPublishingImport, exportService.state != .exporting else { return }
+        if let publication = preview.publication {
+            isPublishingImport = true
+            Task {
+                defer { isPublishingImport = false }
+                do {
+                    guard preview.matchesImportAnalysis(jobManager.job(for: preview.songID)),
+                          !jobManager.isRunning(preview.songID), !jobManager.isRedetecting(preview.songID) else {
+                        throw SongImportWorkflowError.stalePreview
+                    }
+                    let id = try await importStore.approve(publication)
+                    let export = ExportRecord(exportedAt: Date(), documentID: id, songTitle: preview.songTitle,
+                                              tempo: preview.newTempo, sectionCount: preview.newSections.count,
+                                              previousTempo: preview.currentTempo, previousSectionCount: preview.currentSectionNames.count)
+                    let adopted = jobManager.adoptPublishedImport(workspaceID: preview.songID, canonicalID: id,
+                                                                 jobID: preview.jobID, export: export)
+                    if !adopted {
+                        actionAlert = ActionAlert(title: "Published, but the local chart could not be attached",
+                            message: "The song is saved in TheStageBee. The original import analysis remains on disk; reload the library before continuing.")
+                    }
+                    exportPreview = nil
+                    exportErrorMessage = nil
+                    await songStore.fetchSongs()
+                    selection = id
+                } catch { exportErrorMessage = SongImportRedactor.redact(error.localizedDescription) }
+            }
+            return
+        }
         Task {
             do {
                 let record = try await exportService.commit(preview)

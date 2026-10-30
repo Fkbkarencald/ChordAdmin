@@ -48,12 +48,9 @@ nonisolated struct SongRef: Sendable, Hashable, Identifiable {
     var videoID: String? { SongRef.youTubeVideoID(from: url) }
 
     static func youTubeVideoID(from urlString: String?) -> String? {
-        guard let urlString, let url = URL(string: urlString) else { return nil }
-        if url.host?.contains("youtu.be") == true {
-            return url.pathComponents.dropFirst().first
-        }
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        return components?.queryItems?.first(where: { $0.name == "v" })?.value
+        guard let urlString else { return nil }
+        let identity = SongImportNormalizer.sourceIdentity(from: urlString)
+        return identity.provider == "youtube" ? identity.stableIdentifier : nil
     }
 }
 
@@ -71,11 +68,7 @@ final class JobManager: ObservableObject {
     /// Where the analysis backend lives. ChordAdminBackend can be moved off
     /// 5051 with its own `CHORDADMIN_BACKEND_PORT`, so the app has to be able to
     /// follow it; this is also what lets the tests point at a stub server.
-    nonisolated static let backendBaseUrl: String = {
-        guard let override = ProcessInfo.processInfo.environment["CHORDADMIN_BACKEND_URL"],
-              !override.isEmpty else { return "http://localhost:5051" }
-        return override.hasSuffix("/") ? String(override.dropLast()) : override
-    }()
+    nonisolated static var backendBaseUrl: String { BackendConnection.shared.baseURL }
     nonisolated static let defaultBeatModel  = "auto"
     nonisolated static let defaultChordModel = "chord-cnn-lstm"
 
@@ -94,6 +87,7 @@ final class JobManager: ObservableObject {
     /// Whether each queued song may reuse audio already on disk. Kept beside the
     /// queue so a queued "Re-analyse" is still a re-analysis when its turn comes.
     private var queuedResumeFlags: [String: Bool] = [:]
+    private var retryStages: [String: PipelineStage] = [:]
     /// Folders a running re-analysis is replacing, kept off the leftover list
     /// until the run finishes one way or the other.
     private var supersededFolders: [String: URL] = [:]
@@ -111,6 +105,7 @@ final class JobManager: ObservableObject {
     /// The song whose beats are being re-detected, if any. Re-detection runs
     /// outside the main pipeline, so it needs its own busy flag.
     @Published private(set) var redetectingSongID: String?
+    @Published private(set) var structureAnalyzingSongID: String?
 
     /// Jobs found on disk that predate per-song keying, indexed by YouTube video
     /// ID so they can be adopted when their song is opened.
@@ -125,7 +120,7 @@ final class JobManager: ObservableObject {
     func log(for songID: String) -> String { logs[songID] ?? "" }
     func isRunning(_ songID: String) -> Bool { runningSongID == songID }
     func isRedetecting(_ songID: String) -> Bool { redetectingSongID == songID }
-    var isBusy: Bool { runningSongID != nil || redetectingSongID != nil }
+    var isBusy: Bool { runningSongID != nil || redetectingSongID != nil || structureAnalyzingSongID != nil }
     func queuePosition(of songID: String) -> Int? {
         queue.firstIndex(where: { $0.documentID == songID }).map { $0 + 1 }
     }
@@ -277,7 +272,7 @@ final class JobManager: ObservableObject {
         // pipeline alongside it repointed the song at a new folder mid-flight,
         // so the re-detection's result landed in the wrong job — and the toolbar
         // was already promising the run would wait its turn.
-        if runningSongID != nil || redetectingSongID != nil {
+        if isBusy {
             queue.append(song)
             queuedResumeFlags[song.documentID] = resumeIfPossible
             return
@@ -297,11 +292,13 @@ final class JobManager: ObservableObject {
     func removeFromQueue(_ songID: String) {
         queue.removeAll { $0.documentID == songID }
         queuedResumeFlags.removeValue(forKey: songID)
+        retryStages.removeValue(forKey: songID)
     }
 
     func clearQueue() {
         queue.removeAll()
         queuedResumeFlags.removeAll()
+        retryStages.removeAll()
     }
 
     /// Stops the running job. Finished stages and downloaded audio are kept, so
@@ -365,7 +362,7 @@ final class JobManager: ObservableObject {
 
     /// Starts whatever is waiting, once nothing else is using the backend.
     private func startNextQueued() {
-        guard runningSongID == nil, redetectingSongID == nil, !queue.isEmpty else { return }
+        guard !isBusy, !queue.isEmpty else { return }
         let next = queue.removeFirst()
         let resume = queuedResumeFlags.removeValue(forKey: next.documentID) ?? true
         launch(next, resumeIfPossible: resume)
@@ -376,6 +373,7 @@ final class JobManager: ObservableObject {
     private func runPipeline(for song: SongRef, resumeIfPossible: Bool) async {
         let songID = song.documentID
         let cleanedUrl = Self.cleanYouTubeURL(song.url)
+        let retryStage = retryStages.removeValue(forKey: songID)
 
         // Reuse the existing job when we already have its audio.
         var job: AnalysisJob
@@ -389,7 +387,9 @@ final class JobManager: ObservableObject {
         if resumeIfPossible,
            let existing = jobs[songID],
            let existingFolder = folders[songID],
-           existing.hasAudio {
+           (existing.hasAudio || (retryStage != nil && existing.originalAudioPath.map {
+               FileManager.default.fileExists(atPath: $0)
+           } == true)) {
             job = existing
             folder = existingFolder
             resuming = true
@@ -413,6 +413,11 @@ final class JobManager: ObservableObject {
             // read as though it never had been.
             if let previous = jobs[songID] {
                 job.barAlignmentOffset = previous.barAlignmentOffset
+                job.pickupChosenManually = previous.pickupChosenManually
+                job.manualBarOneTime = previous.manualBarOneTime
+                // The new run detects a new beat track, which the old pickup
+                // count does not index into.
+                Self.resetAlignmentForNewBeats(&job, previousBarOneTime: Self.barOneTime(gridPath: previous.beatGridPath))
                 job.beatsPerBarOverride = previous.beatsPerBarOverride
                 job.manualBpm = previous.manualBpm
                 job.tempoHalved = previous.tempoHalved
@@ -436,7 +441,8 @@ final class JobManager: ObservableObject {
 
         folders[songID] = folder
         var report = job.stageReport
-        if !resuming { report = StageReport() } else { report.reset(from: .backend) }
+        if !resuming { report = StageReport() }
+        else { report.reset(from: retryStage ?? .backend) }
         job.stageReport = report
         job.errorMessage = nil
         job.backendErrorMessage = nil
@@ -445,7 +451,7 @@ final class JobManager: ObservableObject {
         persist(job, songID: songID)
 
         do {
-            if !resuming {
+            if !resuming || retryStage.map({ PipelineStage.audioStages.contains($0) }) == true {
                 let tools = try await runAudioStages(job: &job, songID: songID, folder: folder, url: cleanedUrl)
                 _ = tools
             }
@@ -678,7 +684,7 @@ final class JobManager: ObservableObject {
         begin(.backend, job: &job, songID: songID)
         job.status = .checkingAnalysisBackend
         let backendStart = Date()
-        let available = await Self.checkBackendHealth()
+        let available = await LocalAnalysisRuntime.shared.ensureReady()
         // A cancel during the health check comes back as "unreachable"; do not
         // blame the backend for something the user did.
         try Task.checkCancellation()
@@ -708,10 +714,14 @@ final class JobManager: ObservableObject {
             job.status = .detectingBeats
             job.requestedBeatModel = Self.defaultBeatModel
             let beatPath = folder.appendingPathComponent("beat.detection.json").path
+            guard await LocalAnalysisRuntime.shared.ensureReady() else {
+                throw JobError.backendUnavailable("Local analysis is not ready. Check the analysis status and retry.")
+            }
             let data = try await Self.postAudioFile(
                 to: "\(Self.backendBaseUrl)/api/detect-beats",
                 fileURL: wavURL,
-                params: ["model": Self.defaultBeatModel]
+                params: ["model": Self.defaultBeatModel,
+                         "beats_per_bar": String(job.beatsPerBarOverride ?? 4)]
             )
             try data.write(to: URL(fileURLWithPath: beatPath), options: .atomic)
             job.beatDetectionPath = beatPath
@@ -724,7 +734,8 @@ final class JobManager: ObservableObject {
             }
             self.appendLog("BPM: \(bpm.map { String(format: "%.2f", $0) } ?? "—"), beats: \(beatCount ?? 0)\n",
                            songID: songID, folder: folder)
-            return .done
+            let warnings = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["warnings"] as? [String] ?? []
+            return warnings.isEmpty ? .done : .warning(warnings.joined(separator: " · "))
         }
 
         // — Beat grid —
@@ -740,7 +751,7 @@ final class JobManager: ObservableObject {
             let settings = Self.gridSettings(for: job, beatData: beatData)
             let (payload, barCount) = Self.generateBeatGrid(
                 from: settings.beatData, bpm: settings.bpm,
-                barAlignmentOffset: job.barAlignmentOffset ?? 0,
+                barAlignmentOffset: Self.resolvedBeatOffset(job: job, beatData: settings.beatData),
                 beatsPerBar: job.beatsPerBarOverride ?? 4
             )
             guard !payload.isEmpty,
@@ -750,7 +761,7 @@ final class JobManager: ObservableObject {
             try data.write(to: URL(fileURLWithPath: gridPath), options: .atomic)
             job.beatGridPath = gridPath
             job.barCount = barCount
-            job.barAlignmentOffset = job.barAlignmentOffset ?? 0
+            job.barAlignmentOffset = payload["barAlignmentOffset"] as? Int
             job.estimatedTimeSignature = payload["estimatedTimeSignature"] as? String
             return .done
         }
@@ -813,9 +824,28 @@ final class JobManager: ObservableObject {
                 throw JobError.backendRejected("Performer chart is missing")
             }
             let candidatesPath = folder.appendingPathComponent("section.candidates.json").path
-            let (candPayload, candCount, candPreview) = Self.detectSectionCandidates(
+            let sectionsURL = folder.appendingPathComponent("sections.json")
+            let sectionsBeforeAnalysis = try? Data(contentsOf: sectionsURL)
+            var (candPayload, candCount, candPreview) = Self.detectSectionCandidates(
                 performerData: performerData, performerPath: performerPath, draftPath: draftPath
             )
+            var structureWarning: String?
+            do {
+                if let evidence = try await Self.requestAudioStructure(wavURL: wavURL, performerData: performerData) {
+                            guard let enriched = Self.addingAudioBoundaries(evidence, to: candPayload, performerData: performerData) else {
+                        throw JobError.backendRejected("Audio section analysis returned unusable boundaries")
+                    }
+                    let path = folder.appendingPathComponent("audio.structure.json")
+                    try evidence.write(to: path, options: .atomic)
+                    job.audioStructurePath = path.path
+                    candPayload = enriched
+                }
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                structureWarning = "Audio section analysis unavailable; using chord repeats. \(error.localizedDescription)"
+            }
+            try Task.checkCancellation()
             guard !candPayload.isEmpty,
                   let candData = try? JSONSerialization.data(withJSONObject: candPayload, options: .prettyPrinted) else {
                 throw JobError.backendRejected("Could not analyse repeating sections")
@@ -825,19 +855,28 @@ final class JobManager: ObservableObject {
             job.sectionCandidateCount = candCount
             job.sectionCandidatePreview = candPreview
 
-            let sectionsPath = folder.appendingPathComponent("sections.json").path
+            let sectionsPath = sectionsURL.path
+            let currentSections = try? Data(contentsOf: sectionsURL)
+            let ownerHasEdited = self.jobs[songID]?.lastEditedAt != nil
+            let sectionsChangedDuringAnalysis = currentSections != sectionsBeforeAnalysis
             let (sectionsPayload, sectionCount) = Self.generateInitialSections(
                 performerData: performerData, candidatesPayload: candPayload,
                 performerPath: performerPath, candidatesPath: candidatesPath
             )
-            if !sectionsPayload.isEmpty,
+            if (ownerHasEdited || sectionsChangedDuringAnalysis),
+               let currentSections, let saved = try? JSONDecoder().decode(SectionsFile.self, from: currentSections) {
+                job.sectionsPath = sectionsPath
+                job.sectionCount = saved.sections.count
+            } else if !sectionsPayload.isEmpty,
                let sectionsData = try? JSONSerialization.data(withJSONObject: sectionsPayload, options: .prettyPrinted) {
                 try sectionsData.write(to: URL(fileURLWithPath: sectionsPath), options: .atomic)
                 job.sectionsPath = sectionsPath
                 job.sectionCount = sectionCount
             }
 
-            let warnings = (candPayload["warnings"] as? [String]) ?? []
+            var warnings = (candPayload["warnings"] as? [String]) ?? []
+            warnings += candPayload["audioWarnings"] as? [String] ?? []
+            if let structureWarning { warnings.append(structureWarning) }
             return warnings.isEmpty ? .done : .warning(warnings.joined(separator: " · "))
         }
 
@@ -993,7 +1032,7 @@ final class JobManager: ObservableObject {
         // Tuning applied mid-run counts too, and it is not cosmetic: the beat
         // grid stage reads these back, so a stale snapshot did not merely
         // reset the pickers — it rebuilt every chart in the wrong metre.
-        job.barAlignmentOffset = live.barAlignmentOffset
+        job.barAlignmentOffset = live.barAlignmentOffset ?? job.barAlignmentOffset
         job.beatsPerBarOverride = live.beatsPerBarOverride
         job.tempoHalved = live.tempoHalved
         job.manualBpm = live.manualBpm
@@ -1039,6 +1078,7 @@ final class JobManager: ObservableObject {
         _ body: (inout AnalysisJob) async throws -> StageState
     ) async throws {
         try Task.checkCancellation()
+        if job.stageReport[stage].state.isSuccessful { return }
         begin(stage, job: &job, songID: songID)
         appendLog("\n▸ \(stage.title)\n", songID: songID, folder: folder)
         let started = Date()
@@ -1056,16 +1096,37 @@ final class JobManager: ObservableObject {
 
     /// Re-runs the pipeline from `stage` without discarding earlier work.
     func retry(from stage: PipelineStage, for song: SongRef) {
-        guard var job = jobs[song.documentID] else { return }
+        guard !isRunning(song.documentID), !isRedetecting(song.documentID),
+              var job = jobs[song.documentID] else { return }
+        let stage = Self.reusableRetryStage(stage, job: job)
         var report = job.stageReport
         report.reset(from: stage)
         job.stageReport = report
         job.errorMessage = nil
-        jobs[song.documentID] = job
-        if let folder = folders[song.documentID] { try? LocalFileStore.saveJob(job, to: folder) }
+        persist(job, songID: song.documentID)
+        retryStages[song.documentID] = stage
+        start(song, resumeIfPossible: true)
+    }
 
-        // Anything from .backend onwards can reuse the audio already on disk.
-        start(song, resumeIfPossible: !PipelineStage.audioStages.contains(stage))
+
+    /// A retry reuses an earlier stage only when its persisted output still
+    /// exists. Missing files move the restart back to their producing stage.
+    static func reusableRetryStage(_ requested: PipelineStage, job: AnalysisJob) -> PipelineStage {
+        let order = PipelineStage.allCases
+        let requestedIndex = order.firstIndex(of: requested) ?? 0
+        let outputs: [(PipelineStage, String?)] = [
+            (.download, job.originalAudioPath), (.convert, job.analysisWavPath),
+            (.metadata, job.metadataPath), (.health, job.audioHealthPath),
+            (.beats, job.beatDetectionPath), (.beatGrid, job.beatGridPath),
+            (.chords, job.chordCleanedPath), (.chart, job.chordChartPerformerPath),
+        ]
+        for (stage, path) in outputs where (order.firstIndex(of: stage) ?? 0) < requestedIndex {
+            if requested.needsBackend, [.download, .metadata, .health].contains(stage) { continue }
+            // Once WAV exists, losing the compressed original need not repeat a download.
+            if stage == .download, requestedIndex > (order.firstIndex(of: .convert) ?? 0), job.hasAudio { continue }
+            if path.map({ FileManager.default.fileExists(atPath: $0) }) != true { return stage }
+        }
+        return requested
     }
 
 
@@ -1091,6 +1152,29 @@ final class JobManager: ObservableObject {
     private func appendLog(_ text: String, songID: String, folder: URL?) {
         logs[songID, default: ""] += text
         if let folder { LocalFileStore.appendLog(text, to: folder) }
+    }
+
+    /// Rebind a newly published draft to its canonical library row without
+    /// rebuilding or losing the owner's chart. Never replace another local job.
+    @discardableResult
+    func adoptPublishedImport(workspaceID: String, canonicalID: String, jobID: String, export: ExportRecord) -> Bool {
+        guard workspaceID != canonicalID, jobs[canonicalID] == nil,
+              !isRunning(workspaceID), !isRedetecting(workspaceID), queuePosition(of: workspaceID) == nil,
+              var job = jobs[workspaceID], job.id == jobID,
+              let folder = folders[workspaceID] else { return false }
+        job.songDocumentID = canonicalID
+        job.lastExport = export
+        // Write first. A full disk keeps the recoverable draft association.
+        do { try LocalFileStore.saveJob(job, to: folder) }
+        catch { persistenceError = error.localizedDescription; return false }
+        jobs[canonicalID] = job
+        folders[canonicalID] = folder
+        logs[canonicalID] = logs[workspaceID]
+        if let protected = protectedFolders.removeValue(forKey: workspaceID) { protectedFolders[canonicalID] = protected }
+        jobs.removeValue(forKey: workspaceID)
+        folders.removeValue(forKey: workspaceID)
+        logs.removeValue(forKey: workspaceID)
+        return true
     }
 
     /// Records that the user changed sections or subdivisions, which is what
@@ -1142,7 +1226,7 @@ final class JobManager: ObservableObject {
     /// Deletes this song's analysis: its folder, its cached charts and its
     /// in-memory state. The song itself is untouched.
     func deleteJob(songID: String) {
-        guard runningSongID != songID, redetectingSongID != songID else { return }
+        guard runningSongID != songID, redetectingSongID != songID, structureAnalyzingSongID != songID else { return }
         // Take it out of the queue first: that must happen even for a song with
         // nothing on disk yet, or a deleted analysis starts itself again.
         removeFromQueue(songID)
@@ -1182,6 +1266,51 @@ final class JobManager: ObservableObject {
 
     // MARK: - Chart adjustments
 
+    /// Refresh suggestions for an existing chart using its saved WAV. The
+    /// owner's section file is deliberately not written by this operation.
+    func refreshAudioStructure(songID: String) async -> String? {
+        guard !isBusy, let original = jobs[songID], let folder = folders[songID],
+              let wavPath = original.analysisWavPath,
+              let chartPath = original.chordChartPerformerPath,
+              let performer = try? Data(contentsOf: URL(fileURLWithPath: chartPath)) else {
+            return "Finish the current analysis and open a song with downloaded audio and a chart."
+        }
+        structureAnalyzingSongID = songID
+        defer { structureAnalyzingSongID = nil; startNextQueued() }
+        do {
+            guard await LocalAnalysisRuntime.shared.ensureReady() else {
+                return "Local analysis is unavailable. Check its status and retry."
+            }
+            guard let evidence = try await Self.requestAudioStructure(wavURL: URL(fileURLWithPath: wavPath),
+                                                                     performerData: performer) else {
+                return "This analysis backend does not support audio section suggestions. Open the updated packaged app."
+            }
+            guard var live = jobs[songID], live.id == original.id,
+                  folders[songID] == folder, let livePath = live.chordChartPerformerPath,
+                  let currentChart = try? Data(contentsOf: URL(fileURLWithPath: livePath)) else {
+                return "The song's analysis changed while the suggestions were being prepared. Retry on the current chart."
+            }
+            let (candidates, count, preview) = Self.detectSectionCandidates(
+                performerData: currentChart, performerPath: livePath, draftPath: live.chordChartDraftPath ?? "")
+            guard let enriched = Self.addingAudioBoundaries(evidence, to: candidates, performerData: currentChart) else {
+                return "Audio section analysis returned unusable boundaries. Your saved sections were kept."
+            }
+            let audioPath = folder.appendingPathComponent("audio.structure.json")
+            let candidatePath = folder.appendingPathComponent("section.candidates.json")
+            try evidence.write(to: audioPath, options: .atomic)
+            try JSONSerialization.data(withJSONObject: enriched, options: .prettyPrinted).write(to: candidatePath, options: .atomic)
+            live.audioStructurePath = audioPath.path
+            live.sectionCandidatesPath = candidatePath.path
+            live.sectionCandidateCount = count
+            live.sectionCandidatePreview = preview
+            persist(live, songID: songID)
+            appendLog("Refreshed acoustic section suggestions; saved sections and timing kept.\n", songID: songID, folder: folder)
+            return nil
+        } catch {
+            return "Audio section suggestions failed: \(error.localizedDescription). Your saved sections were kept."
+        }
+    }
+
     /// Regenerates the beat grid and every downstream chart for `songID`.
     /// Re-uses the detected beats — nothing is downloaded or re-analysed.
     ///
@@ -1203,7 +1332,10 @@ final class JobManager: ObservableObject {
               let cleanedData = try? Data(contentsOf: URL(fileURLWithPath: cleanedPath))
         else { return false }
 
-        if let offset { job.barAlignmentOffset = offset }
+        if let offset {
+            if offset != job.barAlignmentOffset { job.pickupChosenManually = true }
+            job.barAlignmentOffset = offset
+        }
         if let beatsPerBar { job.beatsPerBarOverride = beatsPerBar == 4 ? nil : beatsPerBar }
         if let halved { job.tempoHalved = halved }
         if let manualBpm { job.manualBpm = manualBpm }
@@ -1212,7 +1344,7 @@ final class JobManager: ObservableObject {
         let (gridPayload, barCount) = Self.generateBeatGrid(
             from: settings.beatData,
             bpm: settings.bpm,
-            barAlignmentOffset: job.barAlignmentOffset ?? 0,
+            barAlignmentOffset: Self.resolvedBeatOffset(job: job, beatData: settings.beatData),
             beatsPerBar: job.beatsPerBarOverride ?? 4
         )
         guard !gridPayload.isEmpty,
@@ -1223,6 +1355,7 @@ final class JobManager: ObservableObject {
         try? gridData.write(to: URL(fileURLWithPath: gridPath), options: .atomic)
         job.beatGridPath = gridPath
         job.barCount = barCount
+        job.barAlignmentOffset = gridPayload["barAlignmentOffset"] as? Int
         job.estimatedTimeSignature = gridPayload["estimatedTimeSignature"] as? String
 
         do {
@@ -1243,9 +1376,13 @@ final class JobManager: ObservableObject {
            let draftPath = job.chordChartDraftPath,
            let performerData = try? Data(contentsOf: URL(fileURLWithPath: performerPath)) {
             let candidatesPath = folder.appendingPathComponent("section.candidates.json").path
-            let (payload, count, preview) = Self.detectSectionCandidates(
+            var (payload, count, preview) = Self.detectSectionCandidates(
                 performerData: performerData, performerPath: performerPath, draftPath: draftPath
             )
+            if let path = job.audioStructurePath, let evidence = try? Data(contentsOf: URL(fileURLWithPath: path)),
+               let enriched = Self.addingAudioBoundaries(evidence, to: payload, performerData: performerData) {
+                payload = enriched
+            }
             if !payload.isEmpty,
                let data = try? JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted) {
                 try? data.write(to: URL(fileURLWithPath: candidatesPath), options: .atomic)
@@ -1346,6 +1483,7 @@ final class JobManager: ObservableObject {
               let folder = folders[songID],
               let wavPath = job.analysisWavPath,
               redetectingSongID == nil,
+              structureAnalyzingSongID == nil,
               runningSongID != songID else { return }
 
         redetectingSongID = songID
@@ -1360,11 +1498,15 @@ final class JobManager: ObservableObject {
 
         let started = Date()
         do {
-            var params: [String: String] = ["model": Self.defaultBeatModel, "force": "true"]
+            var params: [String: String] = ["model": Self.defaultBeatModel, "force": "true",
+                                          "beats_per_bar": String(job.beatsPerBarOverride ?? 4)]
             if let minBpm { params["min_bpm"] = String(format: "%.1f", minBpm) }
             if let maxBpm { params["max_bpm"] = String(format: "%.1f", maxBpm) }
             if let transitionLambda { params["transition_lambda"] = String(format: "%.0f", transitionLambda) }
 
+            guard await LocalAnalysisRuntime.shared.ensureReady() else {
+                throw JobError.backendUnavailable("Local analysis is not ready. Check the analysis status and retry.")
+            }
             let data = try await Self.postAudioFile(
                 to: "\(Self.backendBaseUrl)/api/detect-beats",
                 fileURL: URL(fileURLWithPath: wavPath),
@@ -1378,15 +1520,18 @@ final class JobManager: ObservableObject {
             let beatPath = folder.appendingPathComponent("beat.detection.json").path
             try data.write(to: URL(fileURLWithPath: beatPath), options: .atomic)
             let (bpm, beatCount, resolvedModel) = Self.parseBeatResponse(data)
+            let warnings = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["warnings"] as? [String] ?? []
 
             mutateJob(songID) { job in
+                Self.resetAlignmentForNewBeats(&job, previousBarOneTime: Self.barOneTime(gridPath: job.beatGridPath))
                 job.beatDetectionPath = beatPath
                 job.bpm = bpm
                 job.beatCount = beatCount
                 job.resolvedBeatModel = resolvedModel
                 job.tempoHalved = false
                 job.manualBpm = nil
-                job.stageReport.set(.beats, .done, elapsed: Date().timeIntervalSince(started))
+                job.stageReport.set(.beats, warnings.isEmpty ? .done : .warning(warnings.joined(separator: " · ")),
+                                    elapsed: Date().timeIntervalSince(started))
             }
             appendLog("Re-detected beats — BPM \(bpm.map { String(format: "%.2f", $0) } ?? "—")\n",
                       songID: songID, folder: folder)
@@ -1575,7 +1720,9 @@ final class JobManager: ObservableObject {
     nonisolated static func checkBackendHealth() async -> Bool {
         guard let url = URL(string: "\(backendBaseUrl)/health") else { return false }
         do {
-            let (data, response) = try await healthSession.data(from: url)
+            var request = URLRequest(url: url)
+            BackendConnection.shared.authorize(&request)
+            let (data, response) = try await healthSession.data(for: request)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { return false }
             guard let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let service = body["service"] as? String else { return true }
@@ -1600,6 +1747,7 @@ final class JobManager: ObservableObject {
         let boundary = UUID().uuidString
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        BackendConnection.shared.authorize(&request)
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         let bodyURL = FileManager.default.temporaryDirectory

@@ -115,8 +115,13 @@ nonisolated struct ToolChecker {
     /// Resolves a tool without running it. Also honours anything already on the
     /// process PATH, which covers unusual installs.
     nonisolated static func resolvePath(for tool: Tool) -> String? {
-        var directories = searchDirectories
-        if let pathEnv = ProcessInfo.processInfo.environment["PATH"] {
+        let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/ChordAdminAnalysis.app/Contents/Frameworks/bin").path
+        let packaged = FileManager.default.fileExists(atPath: helper)
+        var directories = packaged ? [helper] : searchDirectories
+        if let override = ProcessInfo.processInfo.environment["CHORDADMIN_TOOLS_DIR"] {
+            directories.insert(override, at: 0)
+        }
+        if !packaged, let pathEnv = ProcessInfo.processInfo.environment["PATH"] {
             directories.append(contentsOf: pathEnv.split(separator: ":").map(String.init))
         }
         for directory in directories {

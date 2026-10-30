@@ -12,6 +12,31 @@ final class ChordAdminAppDelegate: NSObject, NSApplicationDelegate {
     /// a manager alive past its window.
     weak var jobManager: JobManager?
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        DispatchQueue.main.async { self.keepWindowOnScreen() }
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        keepWindowOnScreen()
+    }
+
+    /// A saved oversized window must not put search or the title bar off screen.
+    private func keepWindowOnScreen() {
+        for window in NSApplication.shared.windows where window.isVisible {
+            guard let screen = window.screen ?? NSScreen.main else { continue }
+            let constrained = Self.constrainedFrame(window.frame, visible: screen.visibleFrame)
+            if constrained != window.frame { window.setFrame(constrained, display: true) }
+        }
+    }
+
+    static func constrainedFrame(_ frame: CGRect, visible: CGRect) -> CGRect {
+        let width = min(frame.width, visible.width)
+        let height = min(frame.height, visible.height)
+        return CGRect(x: max(visible.minX, min(frame.minX, visible.maxX - width)),
+                      y: max(visible.minY, min(frame.minY, visible.maxY - height)),
+                      width: width, height: height)
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let jobManager else { return .terminateNow }
 
@@ -29,6 +54,10 @@ final class ChordAdminAppDelegate: NSObject, NSApplicationDelegate {
         return .terminateNow
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        LocalAnalysisRuntime.shared.shutdown()
+    }
+
     /// True when the user still wants to quit. Named as what is actually lost:
     /// a download in progress is minutes of work, not an abstraction.
     private func confirmQuitDuringRun(_ jobManager: JobManager) -> Bool {
@@ -37,7 +66,7 @@ final class ChordAdminAppDelegate: NSObject, NSApplicationDelegate {
         alert.messageText = "An analysis is still running."
         alert.informativeText = jobManager.runningSongID != nil
             ? "Quitting stops it. Downloaded audio and finished stages are kept, so starting it again picks up where it left off."
-            : "Quitting stops the beat re-detection. The existing chart is kept."
+            : "Quitting stops the local analysis. The existing chart and saved sections are kept."
         alert.addButton(withTitle: "Quit")
         alert.addButton(withTitle: "Keep Working")
         return alert.runModal() == .alertFirstButtonReturn

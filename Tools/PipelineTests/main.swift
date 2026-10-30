@@ -1947,6 +1947,11 @@ print(String(format: "  · one preview over 350 bars: %.1f ms", perPreviewMs))
 check(perPreviewMs < 120,
       String(format: "a preview stays under 120 ms so typing does not stutter (%.1f ms)", perPreviewMs))
 
+await runImportReviewTests()
+runBeatAlignmentTests()
+runAudioStructureTests()
+await runTimingIntegrationTests()
+
 // MARK: - Summary
 
 print("\n\(checks - failures)/\(checks) checks passed")

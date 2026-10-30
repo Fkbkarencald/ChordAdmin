@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CA1000000000000000000003 /* ChordAdminAnalysis.app in Embed Local Analysis */ = {isa = PBXBuildFile; fileRef = CA1000000000000000000002 /* ChordAdminAnalysis.app */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
 		FB1000000000000000000002 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = FB2000000000000000000002 /* FirebaseFirestore */; };
 		FB1000000000000000000003 /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = FB2000000000000000000003 /* FirebaseFirestoreSwift */; };
 		FB1000000000000000000004 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = FB2000000000000000000004 /* FirebaseAuth */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CA1000000000000000000002 /* ChordAdminAnalysis.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; name = ChordAdminAnalysis.app; path = Tools/.runtime-dist/ChordAdminAnalysis.app; sourceTree = SOURCE_ROOT; };
 		97CD91352FAAEB9500DABA18 /* ChordAdmin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChordAdmin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -41,6 +43,7 @@
 		97CD912C2FAAEB9500DABA18 = {
 			isa = PBXGroup;
 			children = (
+				CA1000000000000000000002 /* ChordAdminAnalysis.app */,
 				97CD91372FAAEB9500DABA18 /* ChordAdmin */,
 				97CD91362FAAEB9500DABA18 /* Products */,
 			);
@@ -64,6 +67,7 @@
 				97CD91312FAAEB9500DABA18 /* Sources */,
 				97CD91322FAAEB9500DABA18 /* Frameworks */,
 				97CD91332FAAEB9500DABA18 /* Resources */,
+				CA1000000000000000000001 /* Embed Local Analysis */,
 			);
 			buildRules = (
 			);
@@ -128,6 +132,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CA1000000000000000000001 /* Embed Local Analysis */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Helpers;
+			dstSubfolderSpec = 1;
+			files = (CA1000000000000000000003 /* ChordAdminAnalysis.app in Embed Local Analysis */,);
+			name = "Embed Local Analysis";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		97CD91312FAAEB9500DABA18 /* Sources */ = {

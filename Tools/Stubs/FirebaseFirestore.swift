@@ -59,6 +59,7 @@ public final class DocumentReference: NSObject, @unchecked Sendable {
     public func delete() async throws {}
 }
 
+public protocol ListenerRegistration { func remove() }
 public class Query: NSObject, @unchecked Sendable {
     public func order(by field: String, descending: Bool = false) -> Query { self }
     public func limit(to limit: Int) -> Query { self }
@@ -77,4 +78,25 @@ public final class Firestore: NSObject, @unchecked Sendable {
     public static func firestore() -> Firestore { Firestore() }
     public func collection(_ collectionPath: String) -> CollectionReference { CollectionReference() }
     public func document(_ documentPath: String) -> DocumentReference { DocumentReference() }
+    public func runTransaction(_ block: @escaping (Transaction, NSErrorPointer) -> Any?) async throws -> Any? {
+        throw NSError(domain: FirestoreErrorDomain, code: FirestoreErrorCode.unavailable.rawValue,
+                      userInfo: [NSLocalizedDescriptionKey: "Firebase transactions require the real signed app."])
+    }
+    public struct Encoder {
+        public init() {}
+        public func encode<T: Encodable>(_ value: T) throws -> [String: Any] { [:] }
+    }
+    public struct Decoder {
+        public init() {}
+        public func decode<T: Decodable>(_ type: T.Type, from: [String: Any]) throws -> T {
+            throw NSError(domain: FirestoreErrorDomain, code: FirestoreErrorCode.unavailable.rawValue)
+        }
+    }
+}
+public final class Transaction {
+    public func getDocument(_ reference: DocumentReference) throws -> DocumentSnapshot { DocumentSnapshot() }
+    public func setData(_ data: [String: Any], forDocument: DocumentReference, merge: Bool = false) {}
+}
+public enum FieldValue {
+    public static func serverTimestamp() -> Any { Date() }
 }

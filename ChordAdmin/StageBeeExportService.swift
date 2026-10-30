@@ -26,6 +26,22 @@ struct ExportPreview: Identifiable {
     let songTitle: String
     let artist: String?
     let documentID: String
+    var publication: SongImportRecord? = nil
+    var importChartsVersion: Int? = nil
+    var importEditedAt: Date? = nil
+    func matchesImportAnalysis(_ job: AnalysisJob?) -> Bool {
+        guard publication != nil else { return true }
+        guard let job else { return false }
+        return job.id == jobID && job.chartsVersion == importChartsVersion && job.lastEditedAt == importEditedAt
+            && job.songDocumentID == songID && job.isExportable
+    }
+
+    var isNewImport: Bool { publication?.targetSongID == nil && publication != nil }
+    var targetDocumentID: String {
+        guard let publication else { return documentID }
+        return SongImportNormalizer.canonicalSongID(targetSongID: publication.targetSongID,
+                                                    source: publication.source, stagingID: publication.id)
+    }
 
     let currentTempo: Int?
     let newTempo: Int?
@@ -135,6 +151,9 @@ final class StageBeeExportService: ObservableObject {
     /// Writes a prepared preview to Firestore and returns what was recorded.
     @discardableResult
     func commit(_ preview: ExportPreview) async throws -> ExportRecord {
+        guard preview.publication == nil else {
+            throw ExportError.identityMismatch("Publish staged imports through the review transaction.")
+        }
         state = .exporting
         do {
             try await db.collection("songs").document(preview.documentID).updateData([
@@ -180,6 +199,10 @@ final class StageBeeExportService: ObservableObject {
             )
         }
 
+        guard await LocalAnalysisRuntime.shared.ensureReady() else {
+            throw ExportError.backendUnavailable(LocalAnalysisRuntime.shared.lastFailure ?? "Local analysis is starting. Try again shortly.")
+        }
+
         // 1 — Translate via the local backend ------------------------------------
         guard let url = URL(string: "\(Self.backendBase)/api/translate-to-stagebee") else {
             throw ExportError.backendUnavailable("Invalid URL")
@@ -187,6 +210,7 @@ final class StageBeeExportService: ObservableObject {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        BackendConnection.shared.authorize(&request)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let subdivisions = job.subdivisionsByBar

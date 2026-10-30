@@ -20,6 +20,7 @@ struct LibrarySidebar: View {
     var libraryError: String?
     @ObservedObject var environment: EnvironmentStore
     @ObservedObject var authStore: AuthStore
+    @ObservedObject private var runtime = LocalAnalysisRuntime.shared
     let queue: [SongRef]
     var onRemoveFromQueue: (String) -> Void = { _ in }
     var onClearQueue: () -> Void = {}
@@ -31,15 +32,21 @@ struct LibrarySidebar: View {
     var focusSearchToken: Int = 0
 
     @State private var showingQueue = false
+    @State private var showingAnalysis = false
     @FocusState private var searchFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            searchField
-            filterChips
-            songList
-            footer
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                searchField.fixedSize(horizontal: false, vertical: true).layoutPriority(2)
+                filterChips.fixedSize(horizontal: false, vertical: true).layoutPriority(2)
+                songList.frame(minHeight: 0, maxHeight: .infinity)
+                footer.fixedSize(horizontal: false, vertical: true).layoutPriority(2)
+            }
+            .frame(width: max(0, geometry.size.width), height: max(0, geometry.size.height), alignment: .top)
+            .clipped()
         }
+        .accessibilityIdentifier("song-library-sidebar")
     }
 
     // MARK: Search
@@ -85,19 +92,33 @@ struct LibrarySidebar: View {
     // MARK: Filters
 
     private var filterChips: some View {
-        LibrarySidebarChipFlow(spacing: 5, lineSpacing: 5) {
-            ForEach(LibraryFilter.allCases) { candidate in
-                LibrarySidebarFilterChip(
-                    title: candidate.title,
-                    count: counts[candidate] ?? 0,
-                    isSelected: candidate == filter
-                ) {
-                    filter = candidate
+        HStack(spacing: 8) {
+            Menu {
+                ForEach(LibraryFilter.allCases) { candidate in
+                    Button {
+                        filter = candidate
+                    } label: {
+                        Label("\(candidate.title) · \(counts[candidate] ?? 0)",
+                              systemImage: candidate == filter ? "checkmark" : "line.3.horizontal.decrease")
+                    }
                 }
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "line.3.horizontal.decrease")
+                    Text(filter.title)
+                    Text("\(counts[filter] ?? 0)").monospacedDigit().foregroundStyle(.secondary)
+                }
+                .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
             }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .accessibilityLabel("Filter songs: \(filter.title), \(counts[filter] ?? 0) \(counts[filter] == 1 ? "song" : "songs")")
+            Spacer(minLength: 4)
+            Text("\(items.count) shown")
+                .scaledFont(size: 10.5, relativeTo: .caption2).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
-        .padding(.bottom, 8)
+        .padding(.bottom, 10)
     }
 
     // MARK: Song list
@@ -265,12 +286,12 @@ struct LibrarySidebar: View {
     /// re-run from where it is reported, instead of hunting for a menu item.
     /// "Backend", qualified by whether it can actually be reached.
     private var backendStateLabel: String {
-        guard let reachable = environment.backendAvailable else { return "Backend not checked" }
-        return reachable ? "Backend ready" : "Backend unreachable"
+        if case .external = runtime.state { return environment.backendAvailable == true ? "External analysis ready" : "External analysis unavailable" }
+        return runtime.label
     }
 
     private var environmentButton: some View {
-        Button(action: onRecheckEnvironment) {
+        Button { showingAnalysis.toggle() } label: {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 6) {
                     Circle()
@@ -284,11 +305,13 @@ struct LibrarySidebar: View {
                     Text(backendStateLabel)
                         .scaledFont(size: 11, weight: .medium, relativeTo: .caption)
                         .foregroundStyle(.primary)
-                    Text(backendDisplayURL)
-                        .scaledFont(size: 10, design: .monospaced, relativeTo: .caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                    if case .external = runtime.state {
+                        Text(backendDisplayURL)
+                            .scaledFont(size: 10, design: .monospaced, relativeTo: .caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
                     Spacer(minLength: 4)
                     if environment.isChecking {
                         ProgressView()
@@ -321,7 +344,8 @@ struct LibrarySidebar: View {
         }
         .buttonStyle(.plain)
         .disabled(environment.isChecking)
-        .help(environmentHelp)
+        .help("Show local analysis status and recovery")
+        .popover(isPresented: $showingAnalysis) { LocalAnalysisStatusView(environment: environment) }
     }
 
     private var accountRow: some View {
@@ -398,21 +422,19 @@ struct LibrarySidebar: View {
     }
 
     private var backendColour: Color {
-        switch environment.backendAvailable {
-        case .some(true):  return .green
-        case .some(false): return .red
-        case .none:        return .secondary
+        switch runtime.state {
+        case .ready: .green
+        case .starting: .orange
+        case .failed: .red
+        case .stopped: .secondary
+        case .external: environment.backendAvailable == true ? .green : .red
         }
     }
 
     /// "http://localhost:5051" reads as "localhost:5051" in a 264pt column.
     private var backendDisplayURL: String {
-        var text = environment.backendURL
-        for prefix in ["https://", "http://"] where text.hasPrefix(prefix) {
-            text.removeFirst(prefix.count)
-        }
-        if text.hasSuffix("/") { text.removeLast() }
-        return text
+        if case .external = runtime.state { return environment.backendURL }
+        return "Runs on this Mac"
     }
 
     private var missingToolCount: Int { environment.missingTools.count }
@@ -536,92 +558,5 @@ private struct LibrarySidebarSongRow: View {
     private var helpText: String {
         guard let artist = item.artist else { return item.state.label }
         return "\(artist) · \(item.state.label)"
-    }
-}
-
-// MARK: - Filter chip
-
-private struct LibrarySidebarFilterChip: View {
-    let title: String
-    let count: Int
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Text(title)
-                    .scaledFont(size: 10.5, weight: .medium, relativeTo: .caption2)
-                Text("\(count)")
-                    .scaledFont(size: 10.5, weight: .medium, relativeTo: .caption2)
-                    .monospacedDigit()
-                    .opacity(0.65)
-            }
-            .foregroundStyle(isSelected ? Color.white : Color.secondary)
-            .padding(.horizontal, 9)
-            .frame(minHeight: 21)
-            .background(
-                Capsule().fill(isSelected ? Color.accentColor : Color.primary.opacity(0.07))
-            )
-            .opacity(count == 0 && !isSelected ? 0.55 : 1)
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .help("Show \(title.lowercased()) songs")
-        .accessibilityLabel("\(title), \(count) \(count == 1 ? "song" : "songs")")
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-    }
-}
-
-// MARK: - Wrapping chip row
-
-/// Lays the filter chips out left to right, wrapping onto a second line when the
-/// column is too narrow — the sidebar can be dragged between 232 and 340pt.
-private struct LibrarySidebarChipFlow: Layout {
-    var spacing: CGFloat = 5
-    var lineSpacing: CGFloat = 5
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let arrangement = arrange(subviews: subviews, maxWidth: proposal.width ?? .infinity)
-        return CGSize(width: proposal.width ?? arrangement.width, height: arrangement.height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let arrangement = arrange(subviews: subviews, maxWidth: bounds.width)
-        for (index, subview) in subviews.enumerated() {
-            let origin = arrangement.origins[index]
-            subview.place(
-                at: CGPoint(x: bounds.minX + origin.x, y: bounds.minY + origin.y),
-                proposal: ProposedViewSize(arrangement.sizes[index])
-            )
-        }
-    }
-
-    private func arrange(
-        subviews: Subviews,
-        maxWidth: CGFloat
-    ) -> (origins: [CGPoint], sizes: [CGSize], width: CGFloat, height: CGFloat) {
-        var origins: [CGPoint] = []
-        var sizes: [CGSize] = []
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var lineHeight: CGFloat = 0
-        var widest: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > maxWidth {
-                x = 0
-                y += lineHeight + lineSpacing
-                lineHeight = 0
-            }
-            origins.append(CGPoint(x: x, y: y))
-            sizes.append(size)
-            x += size.width + spacing
-            widest = max(widest, x - spacing)
-            lineHeight = max(lineHeight, size.height)
-        }
-
-        return (origins, sizes, widest, y + lineHeight)
     }
 }

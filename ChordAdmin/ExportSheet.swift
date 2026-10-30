@@ -34,9 +34,9 @@ struct ExportSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Export to TheStageBee")
+            Text(preview.isNewImport ? "Publish to TheStageBee" : "Export to TheStageBee")
                 .scaledFont(size: 15, weight: .bold, relativeTo: .body)
-            Text("Updates the existing song document — only the sections and the tempo are written. "
+            Text(preview.isNewImport ? "Creates a new song with the reviewed title, artist, key, link and chord chart." : "Updates the existing song document — only the sections and the tempo are written. "
                  + "Title, key, artists and links are not touched.")
                 .scaledFont(size: 11.5, relativeTo: .caption)
                 .foregroundStyle(.secondary)
@@ -53,6 +53,10 @@ struct ExportSheet: View {
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             songRow
+            if let publication = preview.publication, preview.isNewImport {
+                Text("Key: \(publication.reviewFields.key.isEmpty ? "—" : publication.reviewFields.key) · \(publication.reviewFields.link)")
+                    .scaledFont(size: 11.5, relativeTo: .caption).textSelection(.enabled)
+            }
             overwriteBlock
             statusLine
             if let errorMessage, !errorMessage.isEmpty {
@@ -84,20 +88,20 @@ struct ExportSheet: View {
 
                 Spacer(minLength: 12)
 
-                Text("songs/\(preview.documentID)")
+                Text("songs/\(preview.targetDocumentID)")
                     .scaledFont(size: 10, design: .monospaced, relativeTo: .caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: 160, alignment: .trailing)
-                    .help(preview.documentID)
+                    .help(preview.targetDocumentID)
             }
         }
     }
 
     private var overwriteBlock: some View {
         PanelCard(padding: 12) {
-            GroupLabel("This will overwrite")
+            GroupLabel(preview.isNewImport ? "Chart to publish" : "This will overwrite")
             tempoRow
             sectionsRow
         }
@@ -108,7 +112,7 @@ struct ExportSheet: View {
             fieldLabel("Tempo")
 
             if let newTempo = preview.newTempo {
-                if preview.tempoChanged {
+                if preview.tempoChanged && !preview.isNewImport {
                     Text(preview.currentTempo.map { "\($0)" } ?? "—")
                         .scaledFont(size: 12, design: .monospaced, relativeTo: .footnote)
                         .foregroundStyle(.tertiary)
@@ -147,10 +151,12 @@ struct ExportSheet: View {
             fieldLabel("Sections")
 
             VStack(alignment: .leading, spacing: 7) {
-                Text(currentSectionsSummary)
-                    .scaledFont(size: 11, relativeTo: .caption)
-                    .foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !preview.isNewImport {
+                    Text(currentSectionsSummary)
+                        .scaledFont(size: 11, relativeTo: .caption)
+                        .foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 ScrollView(.vertical) {
                     VStack(alignment: .leading, spacing: ExportSheetChipLayout.spacing) {
@@ -241,7 +247,7 @@ struct ExportSheet: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Text("Previous values are kept locally.")
+            Text(preview.isNewImport ? "Publication is recorded in the import history." : "Previous values are kept locally.")
                 .scaledFont(size: 10.5, relativeTo: .caption2)
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
@@ -260,7 +266,7 @@ struct ExportSheet: View {
                             .scaleEffect(0.6)
                             .frame(width: 12, height: 12)
                     }
-                    Text(isExporting ? "Exporting…" : "Overwrite “\(preview.songTitle)”")
+                    Text(isExporting ? "Saving…" : (preview.isNewImport ? "Publish “\(preview.songTitle)”" : "Overwrite “\(preview.songTitle)”"))
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
