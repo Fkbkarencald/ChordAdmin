@@ -261,7 +261,8 @@ final class StageBeeExportService: ObservableObject {
         // a 4/4 song) — the translator writes every bar in the meter.
         var stageBeeSections = sections
         if let form = JobManager.loadForm(job: job) {
-            stageBeeSections = Self.applyingFormMeter(to: sections, form: form)
+            stageBeeSections = Self.applyingFormMeter(to: sections, form: form,
+                                                      editedBars: Set(subdivisions.keys))
         }
 
         // 2 — Describe what will change ------------------------------------------

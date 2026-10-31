@@ -112,6 +112,14 @@ func runSongFormTests() {
     check(zip(fixedBars, form.bars).filter { $1.beats == 6 && $1.chords.count == 2 }
             .allSatisfy { $0.0["structure"] as? String == "1fr 2fr" },
           "a 6/4 bar of D for two beats and G for four is spaced 1fr 2fr, not the translator's guess")
+    if let odd = form.bars.firstIndex(where: { $0.beats == 6 && $0.chords.count == 2 }) {
+        let kept = StageBeeExportService.applyingFormMeter(to: translated, form: form, editedBars: [odd + 1]) as! [[String: Any]]
+        let keptBar = kept.flatMap { ($0["lines"] as! [[String: Any]]).flatMap { $0["bars"] as! [[String: Any]] } }[odd]
+        check(keptBar["structure"] as? String == "1fr 3fr" && (keptBar["timeSignature"] as! [Int]) == [6, 4],
+              "a 6/4 bar whose subdivision the owner set keeps the translator's spacing but still gets its meter")
+    } else {
+        check(false, "the fixture has a two-chord 6/4 bar to test subdivision edits on")
+    }
     var shortened = translated
     shortened.removeLast()
     let untouched = StageBeeExportService.applyingFormMeter(to: shortened, form: form) as! [[String: Any]]

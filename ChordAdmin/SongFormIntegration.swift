@@ -163,7 +163,10 @@ extension StageBeeExportService {
     /// longer or shorter get their own time signature and chord spacing here.
     /// Skipped unless the chart still has exactly the form's bars, and per bar
     /// unless it still has the form's chords — an edited bar keeps its edit.
-    nonisolated static func applyingFormMeter(to sections: Any, form: SongForm.Result) -> Any {
+    /// `editedBars` are chart bar numbers whose subdivision the owner set; the
+    /// translator already spaced those, so only their time signature changes.
+    nonisolated static func applyingFormMeter(to sections: Any, form: SongForm.Result,
+                                              editedBars: Set<Int> = []) -> Any {
         guard var list = sections as? [[String: Any]] else { return sections }
         let formBars = form.bars
         let total = list.reduce(0) { sum, section in
@@ -180,7 +183,8 @@ extension StageBeeExportService {
                     index += 1
                     guard formBar.beats != form.meter else { continue }
                     bars[b]["timeSignature"] = [formBar.beats, 4]
-                    if (bars[b]["chords"] as? [Any])?.count == formBar.chords.count {
+                    if !editedBars.contains(index),
+                       (bars[b]["chords"] as? [Any])?.count == formBar.chords.count {
                         bars[b]["structure"] = formBar.structure
                     }
                 }
