@@ -44,4 +44,24 @@ struct FirebaseSongSection: Codable, Hashable {
         let candidates = [title, name].compactMap { $0 }
         return candidates.first(where: { !$0.isEmpty }) ?? "Untitled section"
     }
+
+    /// TheStageBee's editor numbers its sections (`"id": 79`). Reading `id` only
+    /// as text made every such song fail to decode, so 166 of 391 songs were
+    /// missing from the library and from search.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let text = try? container.decodeIfPresent(String.self, forKey: .id) {
+            id = text
+        } else {
+            id = (try? container.decodeIfPresent(Int.self, forKey: .id)).flatMap { $0 }.map(String.init)
+        }
+        name = try? container.decodeIfPresent(String.self, forKey: .name)
+        title = try? container.decodeIfPresent(String.self, forKey: .title)
+    }
+
+    init(id: String?, name: String?, title: String?) {
+        self.id = id
+        self.name = name
+        self.title = title
+    }
 }

@@ -487,6 +487,19 @@ func runSectionAndStorageTests() {
             from: try! JSONSerialization.data(withJSONObject: ["id": "s2", "title": "Golden Hour"])
         )
         check(named.title == "Golden Hour", "an ordinary title still reads through")
+
+        // TheStageBee's editor numbers sections; 166 of 391 songs were hidden
+        // because a numeric section id failed the whole document.
+        let numbered = try? JSONDecoder().decode(
+            FirebaseSong.self,
+            from: try! JSONSerialization.data(withJSONObject: [
+                "id": "s3", "title": "A Chit Loh Khaw Tha Lar",
+                "sections": [["id": 79, "title": "Intro"], ["id": "section-2", "title": "Verse 1"], ["title": "Outro"]],
+            ])
+        )
+        check(numbered?.sections?.map { $0.id } == ["79", "section-2", nil]
+              && numbered?.sections?.map(\.displayName) == ["Intro", "Verse 1", "Outro"],
+              "a song whose sections have numeric ids still decodes and stays in the library")
     }
 
     // A rename is a change; identity-only equality made it invisible.
