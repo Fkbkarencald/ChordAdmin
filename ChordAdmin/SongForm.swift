@@ -389,10 +389,13 @@ nonisolated enum SongForm {
         /// the chords alone cannot, but often lands a beat or two off.
         // Measured on the eight corrected songs, the model's starts on bar
         // lines, with the search only allowed to remove them, cut boundary
-        // errors from 82 to 62; as evidence in the free search, only to 78.
+        // errors from 82 to 58; as evidence in the free search, only to 78.
         var model = 4.0
         /// How far, in beats, a model start may be moved onto a chord change.
         var modelReach = 4
+        /// How early the model marks a section, in beats: on the eight songs
+        /// its starts sit a median of one beat before the true downbeat.
+        var modelLead = 1.0
         var periodic = 6.0
         var repeatStart = 3.0
         var repeatEnd = 1.0
@@ -624,12 +627,17 @@ nonisolated enum SongForm {
         return evidence
     }
 
+    /// `model` is the structure model's section starts, in seconds.
     nonisolated static func plan(_ t: Timeline, key: Key, span: Range<Int>, meter: Int, sung: [Bool]? = nil,
-                                 model: [Int] = [], weights: Weights = .standard) -> Plan {
+                                 model: [Double] = [], weights: Weights = .standard) -> Plan {
         let h = t.harmony
         let layouts = LayoutCache(h: h, meter: meter)
         let allRuns = distinct(runs(h, in: span, minLag: phrase, minLength: phrase))
-        let evidence = evidence(h, span: span, meter: meter, sung: sung, runs: allRuns, model: model, weights: weights)
+        func nearest(_ time: Double, among beats: [Int]) -> Int? {
+            beats.min { abs(t.edges[$0] - time) < abs(t.edges[$1] - time) }
+        }
+        let modelBeats = model.compactMap { nearest($0, among: Array(0..<t.count)) }
+        let evidence = evidence(h, span: span, meter: meter, sung: sung, runs: allRuns, model: modelBeats, weights: weights)
         let loops = lineLoops(allRuns)
 
         // Start from the strong evidence only, the strongest candidate in each
@@ -650,9 +658,14 @@ nonisolated enum SongForm {
         let modelLed = !model.isEmpty
         if modelLed {
             picked = []
-            for beat in model {
-                let bar = span.lowerBound + Int((Double(beat - span.lowerBound) / Double(meter)).rounded()) * meter
-                guard bar > span.lowerBound, span.upperBound - bar >= meter,
+            // The bar line nearest the model's time, not the bar nearest its
+            // nearest beat: rounding twice can land a whole bar away.
+            let barLines = Array(stride(from: span.lowerBound, to: span.upperBound, by: meter))
+            for time in model {
+                guard let beat = nearest(time, among: Array(0..<t.count)) else { continue }
+                let corrected = time + weights.modelLead * (t.edges[beat + 1] - t.edges[beat])
+                guard let bar = nearest(corrected, among: barLines),
+                      bar > span.lowerBound, span.upperBound - bar >= meter,
                       bar - (picked.last ?? span.lowerBound) >= meter else { continue }
                 picked.append(bar)
             }
@@ -720,9 +733,10 @@ nonisolated enum SongForm {
 
         // A long passage that repeats nowhere may still be two phrases — an
         // intro then a prelude — when its harmonic rhythm changes halfway.
+        // Not with the model: its sections may only be removed, never added to.
         var letters = cost(h, key: key, bounds: bounds, evidence: evidence, layouts: layouts, weights: weights).1
         var i = 0
-        while i < bounds.count - 1 {
+        while !modelLed, i < bounds.count - 1 {
             let range = bounds[i]..<bounds[i + 1]
             let unique = letters.filter { $0 == letters[i] }.count == 1
             if unique, range.count >= 2 * phrase {
@@ -952,13 +966,12 @@ nonisolated enum SongForm {
             let middle = (t.edges[beat] + t.edges[beat + 1]) / 2
             return sortedVocals.last { $0.start <= middle }?.sung ?? false
         }
-        // The model's starts, where its label changes (it splits a long
-        // section into same-label pieces), on the nearest beat.
-        let modelBeats: [Int] = zip(model ?? [], (model ?? []).dropFirst()).compactMap { previous, section in
-            guard previous.label != section.label else { return nil }
-            return (0..<t.count).min { abs(t.edges[$0] - section.start) < abs(t.edges[$1] - section.start) }
+        // The model's starts, where its label changes: it splits a long
+        // section into same-label pieces.
+        let modelStarts: [Double] = zip(model ?? [], (model ?? []).dropFirst()).compactMap { previous, section in
+            previous.label != section.label ? section.start : nil
         }
-        var plan = plan(t, key: key, span: span, meter: meter, sung: sungBeats, model: modelBeats, weights: weights)
+        var plan = plan(t, key: key, span: span, meter: meter, sung: sungBeats, model: modelStarts, weights: weights)
         plan.letters = transposedLetters(t.harmony, bounds: plan.boundaries, letters: plan.letters)
         let sung: [Bool]? = sungBeats.map { beats in
             (0..<(plan.boundaries.count - 1)).map { i in

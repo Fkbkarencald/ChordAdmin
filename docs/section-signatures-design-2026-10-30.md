@@ -265,11 +265,14 @@ each miss or extra start is one error):
 | SongForm, chords and vocals | 82 |
 | Model as extra evidence in SongForm's free search | 78 |
 | Model alone, merged by label, snapped to downbeats | 67 |
-| **Model's starts as the boundaries, on bar lines; SongForm may only remove them** | **62** |
+| **Model's starts as the boundaries, on bar lines; SongForm may only remove them** | **58** |
 
-The last is what ships. The model is better on six songs; it is worse on
-နမၤနၢၤယဝံကလၤ (3 against 0) and on khon ka taw (13 against 4), whose male and
-female sections are not a pop form. Its labels are not yet used for names.
+The last is what ships. The model marks sections a median of one beat early,
+so each start is moved a beat later before it goes to the nearest bar line,
+and nothing may add a section the model did not mark. It is better on six
+songs; it is worse on နမၤနၢၤယဝံကလၤ (3 against 0) and on khon ka taw (10
+against 4), whose male and female sections are not a pop form. Its labels are
+not yet used for names.
 
 - **Backend:** `services/structure_model_service.py` separates the four stems at
   44.1 kHz as 16-bit, as the model was trained, and runs the eight-fold

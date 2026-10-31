@@ -272,6 +272,6 @@ func runSongFormCorpusTests() {
     }
     check(songs >= 8, "all \(songs) corrected songs are measured")
     check(totals.chords <= 82, "boundary errors from chords and vocals stay within 82 (\(totals.chords))")
-    check(modelled >= 8 && totals.model <= 62,
-          "with the structure model's sections, boundary errors stay within 62 (\(totals.model) over \(modelled) songs)")
+    check(modelled >= 8 && totals.model <= 58,
+          "with the structure model's sections, boundary errors stay within 58 (\(totals.model) over \(modelled) songs)")
 }
