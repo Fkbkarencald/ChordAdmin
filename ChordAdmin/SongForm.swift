@@ -158,6 +158,18 @@ nonisolated enum SongForm {
             case .flats: return flatKeyNames[tonic] + (minor ? "m" : "")
             }
         }
+        /// The accidental the key's chords are written with: flats in Ab,
+        /// sharps in E, nil in C and Am, where the detector's spelling stands.
+        var accidental: Character? {
+            if name.contains("#") { return "#" }
+            if name.dropFirst().hasPrefix("b") { return "b" }
+            let major = minor ? (tonic + 3) % 12 : tonic
+            switch (major * 7) % 12 {
+            case 1...6: return "#"
+            case 7...11: return "b"
+            default: return nil
+            }
+        }
         func isTonicChord(_ h: Harmony?) -> Bool {
             guard let h, h.root == tonic else { return false }
             return minor ? h.quality == .minor : h.isMajorLike
@@ -897,6 +909,7 @@ nonisolated enum SongForm {
             if accidental == "#" { sharps += 1 } else if accidental == "b" { flats += 1 }
         }
         key.spelling = sharps > flats ? .sharps : flats > sharps ? .flats : .conventional
+        let spelt = key.accidental.map { accidental in t.names.map { $0.map { respelled($0, accidental: accidental) } } } ?? t.names
         let sortedVocals = (vocals ?? []).sorted { $0.start < $1.start }
         let sungBeats: [Bool]? = sortedVocals.isEmpty ? nil : (0..<t.count).map { beat in
             let middle = (t.edges[beat] + t.edges[beat + 1]) / 2
@@ -919,7 +932,7 @@ nonisolated enum SongForm {
             var bars: [Bar] = []
             var p = range.lowerBound
             for n in layout(changes: changeOffsets(t.harmony, range), length: range.count, meter: meter) {
-                let chords = barChords(Array(t.names[p..<(p + n)]), before: previous)
+                let chords = barChords(Array(spelt[p..<(p + n)]), before: previous)
                 previous = chords.last?.name
                 bars.append(Bar(startBeat: p, beats: n, start: t.edges[p], end: t.edges[p + n],
                                 chords: chords, structure: structure(chords)))
@@ -929,6 +942,20 @@ nonisolated enum SongForm {
                                     startBeat: range.lowerBound, endBeat: range.upperBound, bars: bars))
         }
         return Result(key: key.name, meter: meter, sections: sections, beatEdges: t.edges)
+    }
+
+    /// A chord name with its root and bass note written in the key's
+    /// accidental: C# becomes Db in A♭. A bass given as a degree ("/b3") stays.
+    nonisolated static func respelled(_ name: String, accidental: Character) -> String {
+        let names = accidental == "#" ? sharpKeyNames : flatKeyNames
+        func note(_ part: Substring) -> String {
+            guard let letter = part.first, "ABCDEFG".contains(letter) else { return String(part) }
+            var root = String(letter)
+            if let next = part.dropFirst().first, next == "#" || next == "b" { root.append(next) }
+            guard let pitch = pitchClasses[root] else { return String(part) }
+            return names[pitch] + part.dropFirst(root.count)
+        }
+        return name.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false).map(note).joined(separator: "/")
     }
 
     nonisolated static func letterName(_ index: Int) -> String {

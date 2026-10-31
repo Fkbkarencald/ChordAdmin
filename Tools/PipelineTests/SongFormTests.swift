@@ -129,6 +129,17 @@ func runSongFormTests() {
           "a chart whose bars no longer match the form is exported as it is")
 
     // — Parts —
+    check(SongForm.Key(tonic: 8, minor: false).accidental == "b"
+          && SongForm.Key(tonic: 4, minor: false).accidental == "#"
+          && SongForm.Key(tonic: 5, minor: true).accidental == "b"
+          && SongForm.Key(tonic: 9, minor: true).accidental == nil
+          && SongForm.Key(tonic: 1, minor: false, spelling: .sharps).accidental == "#",
+          "flat keys write flats, sharp keys sharps, C and Am leave the detector's spelling")
+    check(SongForm.respelled("C#", accidental: "b") == "Db"
+          && SongForm.respelled("G#m7/D#", accidental: "b") == "Abm7/Eb"
+          && SongForm.respelled("Bbm/b3", accidental: "#") == "A#m/b3"
+          && SongForm.respelled("Eb/G", accidental: "b") == "Eb/G",
+          "a chord's root and bass are respelt, a bass degree is left alone")
     check(SongForm.harmony("F#m7") == SongForm.Harmony(root: 6, quality: .minor)
           && SongForm.harmony("Ab/b7") == SongForm.Harmony(root: 8, quality: .major)
           && SongForm.harmony("Dsus2") == SongForm.Harmony(root: 2, quality: .sus2)
@@ -228,6 +239,6 @@ func runSongFormCorpusTests() {
         total += missed + extra
         songs += 1
     }
-    check(songs >= 7, "all \(songs) corrected songs are measured")
-    check(total <= 71, "boundary errors across the corrected songs stay within 71 (\(total))")
+    check(songs >= 8, "all \(songs) corrected songs are measured")
+    check(total <= 85, "boundary errors across the corrected songs stay within 85 (\(total))")
 }
