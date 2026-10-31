@@ -250,3 +250,38 @@ merged every sung section into "Chorus".
   - **Spelling:** StageBee's own (`EMadd9`, `Dsus2`, `Gmaj7`).
 
 All decisions are settled.
+
+## Addendum, 31 October: a trained structure model
+
+Chord repeats and vocal timing plateaued at about 82 boundary errors across the
+eight corrected songs, because many of these songs use one progression for
+verse, pre-chorus and chorus. All-In-One (`allin1` 1.1.0, Taejun Kim, MIT;
+trained on the Harmonix pop set) hears the arrangement from separated stems
+instead. Measured with the corpus test's rule (a start within 0.6 s counts;
+each miss or extra start is one error):
+
+| | Errors, 8 songs |
+|---|---|
+| SongForm, chords and vocals | 82 |
+| Model as extra evidence in SongForm's free search | 78 |
+| Model alone, merged by label, snapped to downbeats | 67 |
+| **Model's starts as the boundaries, on bar lines; SongForm may only remove them** | **58** |
+
+The last is what ships. The model marks sections a median of one beat early,
+so each start is moved a beat later before it goes to the nearest bar line,
+and nothing may add a section the model did not mark. It is better on six
+songs; it is worse on နမၤနၢၤယဝံကလၤ (3 against 0) and on khon ka taw (10
+against 4), whose male and female sections are not a pop form. Its labels are
+not yet used for names.
+
+- **Backend:** `services/structure_model_service.py` separates the four stems at
+  44.1 kHz as 16-bit, as the model was trained, and runs the eight-fold
+  ensemble. `/api/detect-structure` returns `modelSegments`.
+- **Weights:** converted once to safetensors by `scripts/convert_allinone.py`
+  (PyTorch's restricted loader), so the runtime never unpickles.
+- **Attention:** NATTEN no longer ships the interface allin1 uses, so
+  `vendor/allin1/models/natten.py` implements it in plain PyTorch, tested
+  against a brute-force reference. Its output on a real song is identical to
+  allin1's own.
+- **App:** the sections stage passes `modelSegments` to `SongForm.analyse`.
+  Without them, the form is read from chords and vocals as before.

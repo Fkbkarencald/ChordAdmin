@@ -384,6 +384,18 @@ nonisolated enum SongForm {
         // (a chorus line left to the band) make vocal edges weak evidence;
         // above 1 they cost more boundaries than they find.
         var vocal = 1.0
+        /// A section start from the trained structure model (All-In-One),
+        /// lent to the chord changes near it. It hears the arrangement, which
+        /// the chords alone cannot, but often lands a beat or two off.
+        // Measured on the eight corrected songs, the model's starts on bar
+        // lines, with the search only allowed to remove them, cut boundary
+        // errors from 82 to 58; as evidence in the free search, only to 78.
+        var model = 4.0
+        /// How far, in beats, a model start may be moved onto a chord change.
+        var modelReach = 4
+        /// How early the model marks a section, in beats: on the eight songs
+        /// its starts sit a median of one beat before the true downbeat.
+        var modelLead = 1.0
         var periodic = 6.0
         var repeatStart = 3.0
         var repeatEnd = 1.0
@@ -578,7 +590,8 @@ nonisolated enum SongForm {
     /// Every piece of boundary evidence: repeats (spread across a held chord
     /// at their start) and vocal entries and exits.
     nonisolated static func evidence(_ h: [Harmony?], span: Range<Int>, meter: Int, sung: [Bool]?,
-                                     runs allRuns: [Run], weights: Weights = .standard) -> [Int: Double] {
+                                     runs allRuns: [Run], model: [Int] = [],
+                                     weights: Weights = .standard) -> [Int: Double] {
         var evidence = candidates(allRuns, weights: weights)
         // A repeat that begins on a held chord could begin anywhere in it: the
         // chord matches on both sides. Lend the evidence to each bar line in
@@ -603,15 +616,28 @@ nonisolated enum SongForm {
                 }
             }
         }
+        // A model start goes to the nearest chord change within reach (a
+        // section almost always opens on one), else stays on its own beat.
+        for beat in model where span.contains(beat) && beat > span.lowerBound {
+            let near = (max(span.lowerBound + 1, beat - weights.modelReach)...min(span.upperBound - 1, beat + weights.modelReach))
+                .filter { h[$0] != nil && h[$0] != h[$0 - 1] }
+            let target = near.min { abs($0 - beat) < abs($1 - beat) } ?? beat
+            evidence[target, default: 0] += weights.model
+        }
         return evidence
     }
 
+    /// `model` is the structure model's section starts, in seconds.
     nonisolated static func plan(_ t: Timeline, key: Key, span: Range<Int>, meter: Int, sung: [Bool]? = nil,
-                                 weights: Weights = .standard) -> Plan {
+                                 model: [Double] = [], weights: Weights = .standard) -> Plan {
         let h = t.harmony
         let layouts = LayoutCache(h: h, meter: meter)
         let allRuns = distinct(runs(h, in: span, minLag: phrase, minLength: phrase))
-        let evidence = evidence(h, span: span, meter: meter, sung: sung, runs: allRuns, weights: weights)
+        func nearest(_ time: Double, among beats: [Int]) -> Int? {
+            beats.min { abs(t.edges[$0] - time) < abs(t.edges[$1] - time) }
+        }
+        let modelBeats = model.compactMap { nearest($0, among: Array(0..<t.count)) }
+        let evidence = evidence(h, span: span, meter: meter, sung: sung, runs: allRuns, model: modelBeats, weights: weights)
         let loops = lineLoops(allRuns)
 
         // Start from the strong evidence only, the strongest candidate in each
@@ -627,6 +653,23 @@ nonisolated enum SongForm {
             picked.append(beat)
         }
         if let last = picked.last, span.upperBound - last < minSection { picked.removeLast() }
+        // With the model, its starts are the boundaries, on the nearest bar
+        // line; the search below may only take away the ones it can't justify.
+        let modelLed = !model.isEmpty
+        if modelLed {
+            picked = []
+            // The bar line nearest the model's time, not the bar nearest its
+            // nearest beat: rounding twice can land a whole bar away.
+            let barLines = Array(stride(from: span.lowerBound, to: span.upperBound, by: meter))
+            for time in model {
+                guard let beat = nearest(time, among: Array(0..<t.count)) else { continue }
+                let corrected = time + weights.modelLead * (t.edges[beat + 1] - t.edges[beat])
+                guard let bar = nearest(corrected, among: barLines),
+                      bar > span.lowerBound, span.upperBound - bar >= meter,
+                      bar - (picked.last ?? span.lowerBound) >= meter else { continue }
+                picked.append(bar)
+            }
+        }
         var bounds = [span.lowerBound] + picked + [span.upperBound]
 
         // Where a boundary may move: chord changes and repeat starts nearby.
@@ -641,7 +684,7 @@ nonisolated enum SongForm {
         for _ in 0..<40 {
             var trials: [[Int]] = []
             // Move one boundary nearby.
-            for i in 1..<(bounds.count - 1) {
+            for i in 1..<(bounds.count - 1) where !modelLed {
                 for beat in (bounds[i] - 12)...(bounds[i] + 12) where movable.contains(beat) && beat != bounds[i] {
                     guard beat - bounds[i - 1] >= minSection, bounds[i + 1] - beat >= minSection else { continue }
                     var trial = bounds
@@ -651,7 +694,7 @@ nonisolated enum SongForm {
             }
             // Shift a run of neighbouring boundaries together: two choruses that
             // both start a bar early only line up when both move.
-            for a in 1..<max(1, bounds.count - 2) {
+            for a in 1..<max(1, bounds.count - 2) where !modelLed {
                 for b in (a + 1)..<(bounds.count - 1) {
                     for delta in -12...12 where delta != 0 {
                         guard bounds[a] + delta - bounds[a - 1] >= minSection,
@@ -670,7 +713,7 @@ nonisolated enum SongForm {
                 trials.append(trial)
             }
             // Add one near weaker evidence.
-            for seed in seeds where !bounds.contains(seed) {
+            for seed in seeds where !bounds.contains(seed) && !modelLed {
                 guard let slot = bounds.firstIndex(where: { $0 > seed }), slot > 0 else { continue }
                 for beat in (seed - 12)...(seed + 12) where movable.contains(beat) {
                     guard beat - bounds[slot - 1] >= minSection, bounds[slot] - beat >= minSection else { continue }
@@ -690,9 +733,10 @@ nonisolated enum SongForm {
 
         // A long passage that repeats nowhere may still be two phrases — an
         // intro then a prelude — when its harmonic rhythm changes halfway.
+        // Not with the model: its sections may only be removed, never added to.
         var letters = cost(h, key: key, bounds: bounds, evidence: evidence, layouts: layouts, weights: weights).1
         var i = 0
-        while i < bounds.count - 1 {
+        while !modelLed, i < bounds.count - 1 {
             let range = bounds[i]..<bounds[i + 1]
             let unique = letters.filter { $0 == letters[i] }.count == 1
             if unique, range.count >= 2 * phrase {
@@ -889,9 +933,16 @@ nonisolated enum SongForm {
         var sung: Bool
     }
 
+    /// A section the trained structure model found: where it starts and what
+    /// the model calls it (verse, chorus, solo, ...).
+    nonisolated struct ModelSection: Sendable, Equatable {
+        var start: Double
+        var label: String
+    }
+
     nonisolated static func analyse(beatTimes: [Double], chords: [ChordSpan], audioEnd: Double?,
                                     meter: Int = 4, downbeat: Int = 0, vocals: [VocalSpan]? = nil,
-                                    weights: Weights = .standard) -> Result? {
+                                    model: [ModelSection]? = nil, weights: Weights = .standard) -> Result? {
         let t = timeline(beatTimes: beatTimes, chords: chords, audioEnd: audioEnd)
         guard let firstChord = t.harmony.firstIndex(where: { $0 != nil }),
               let lastChord = t.harmony.lastIndex(where: { $0 != nil }) else { return nil }
@@ -915,7 +966,12 @@ nonisolated enum SongForm {
             let middle = (t.edges[beat] + t.edges[beat + 1]) / 2
             return sortedVocals.last { $0.start <= middle }?.sung ?? false
         }
-        var plan = plan(t, key: key, span: span, meter: meter, sung: sungBeats, weights: weights)
+        // The model's starts, where its label changes: it splits a long
+        // section into same-label pieces.
+        let modelStarts: [Double] = zip(model ?? [], (model ?? []).dropFirst()).compactMap { previous, section in
+            previous.label != section.label ? section.start : nil
+        }
+        var plan = plan(t, key: key, span: span, meter: meter, sung: sungBeats, model: modelStarts, weights: weights)
         plan.letters = transposedLetters(t.harmony, bounds: plan.boundaries, letters: plan.letters)
         let sung: [Bool]? = sungBeats.map { beats in
             (0..<(plan.boundaries.count - 1)).map { i in
@@ -965,7 +1021,7 @@ nonisolated enum SongForm {
     /// Reads the job's own files: detected beats and cleaned chords.
     nonisolated static func analyse(beatData: Data, cleanedChordData: Data, audioEnd: Double?,
                                     meter: Int = 4, downbeat: Int = 0, vocals: [VocalSpan]? = nil,
-                                    weights: Weights = .standard) -> Result? {
+                                    model: [ModelSection]? = nil, weights: Weights = .standard) -> Result? {
         guard let beatJSON = try? JSONSerialization.jsonObject(with: beatData) as? [String: Any],
               let rawBeats = beatJSON["beats"] as? [[String: Any]],
               let chordJSON = try? JSONSerialization.jsonObject(with: cleanedChordData) as? [String: Any],
@@ -978,7 +1034,21 @@ nonisolated enum SongForm {
             return ChordSpan(name: name, start: start, end: end)
         }
         return analyse(beatTimes: beats, chords: chords, audioEnd: audioEnd, meter: meter, downbeat: downbeat,
-                       vocals: vocals, weights: weights)
+                       vocals: vocals, model: model, weights: weights)
+    }
+
+    /// The model's sections (start, end and label) from the backend's
+    /// structure response (`modelSegments`) or a saved model run (`segments`),
+    /// without its "start" and "end" markers; nil when there are none.
+    nonisolated static func modelSections(from data: Data) -> [ModelSection]? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let segments = (json["modelSegments"] ?? json["segments"]) as? [[String: Any]] else { return nil }
+        let sections: [ModelSection] = segments.compactMap { segment in
+            guard let start = (segment["start"] as? NSNumber)?.doubleValue, let label = segment["label"] as? String,
+                  label != "start", label != "end" else { return nil }
+            return ModelSection(start: start, label: label)
+        }
+        return sections.isEmpty ? nil : sections
     }
 
     /// Sung and unsung spans from the backend's structure response, when its

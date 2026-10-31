@@ -18,6 +18,9 @@ TOOLS = ROOT / "Tools"
 
 
 VOCAL_MODELS = ("htdemucs", "wav2vec2-xlsr-53-espeak-cv-ft")
+# All-In-One section model: eight Harmonix folds, from scripts/convert_allinone.py.
+STRUCTURE_MODEL = "allinone"
+STRUCTURE_FOLDS = tuple(f"fold{n}.safetensors" for n in range(8))
 # transformers loads model code lazily and checks these distributions at import.
 TRANSFORMERS_METADATA = ("transformers", "tokenizers", "huggingface-hub", "safetensors", "regex", "tqdm",
                          "requests", "packaging", "filelock", "numpy", "pyyaml", "fsspec")
@@ -57,6 +60,10 @@ def prepare(source, stage):
         if not (source / "models" / name / "model.safetensors").is_file():
             raise RuntimeError("Build input is missing: models/" + name)
         shutil.copytree(source / "models" / name, stage / "models" / name, dirs_exist_ok=True)
+    structure = source / "models" / STRUCTURE_MODEL
+    if not all((structure / name).is_file() for name in STRUCTURE_FOLDS + ("config.json",)):
+        raise RuntimeError("Build input is missing: models/allinone (run scripts/convert_allinone.py)")
+    shutil.copytree(structure, stage / "models" / STRUCTURE_MODEL, dirs_exist_ok=True)
     return model
 
 
@@ -74,10 +81,11 @@ def main():
     from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metadata
     binaries = []
     data = [(str(model), "models/Chord-CNN-LSTM")]
-    data += [(str(stage / "models" / name), "models/" + name) for name in VOCAL_MODELS]
+    data += [(str(stage / "models" / name), "models/" + name) for name in VOCAL_MODELS + (STRUCTURE_MODEL,)]
     for distribution in TRANSFORMERS_METADATA:
         data += copy_metadata(distribution)
-    hidden = collect_submodules("transformers.models.wav2vec2") + collect_submodules("vendor.demucs")
+    hidden = (collect_submodules("transformers.models.wav2vec2") + collect_submodules("vendor.demucs")
+              + collect_submodules("vendor.allin1"))
     for package in ("madmom", "librosa"):
         package_data, package_bins, package_hidden = collect_all(package)
         data += package_data
@@ -121,6 +129,7 @@ def main():
     shutil.copy2(Path(madmom.__file__).parent / "models/LICENSE", notices / "madmom-models.txt")
     shutil.copy2(stage / "vendor/demucs/LICENSE", notices / "Demucs-htdemucs-MIT.txt")
     shutil.copy2(stage / "vendor/demucs/LICENSE-openunmix", notices / "openunmix-filtering-MIT.txt")
+    shutil.copy2(stage / "vendor/allin1/LICENSE", notices / "All-In-One-allin1-MIT.txt")
     (notices / "wav2vec2-xlsr-53-espeak-cv-ft.txt").write_text(
         "facebook/wav2vec2-xlsr-53-espeak-cv-ft (Hugging Face), Apache License 2.0.\n"
         "Converted to float16 safetensors for ChordAdmin; weights otherwise unchanged.\n")
@@ -142,7 +151,9 @@ def main():
                                  for p in directory.glob("*.py")},
                 "models": {**{p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (model / "cache_data").glob("*.sdict")},
                            **{name + "/model.safetensors": hashlib.sha256((stage / "models" / name / "model.safetensors").read_bytes()).hexdigest()
-                              for name in VOCAL_MODELS}},
+                              for name in VOCAL_MODELS},
+                           **{STRUCTURE_MODEL + "/" + name: hashlib.sha256((stage / "models" / STRUCTURE_MODEL / name).read_bytes()).hexdigest()
+                              for name in STRUCTURE_FOLDS + ("config.json",)}},
                 "packager": "PyInstaller 6.16.0", "downloader": lock, "distribution": "development; third-party model licence review required"}
     (output / "runtime-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     helper = output.parent.parent

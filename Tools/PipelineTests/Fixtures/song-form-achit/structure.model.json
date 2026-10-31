@@ -1,0 +1,71 @@
+{
+ "source": "All-In-One (allin1 1.1.0, harmonix-all) on the analysis audio",
+ "bpm": 81,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 0.44,
+   "label": "start"
+  },
+  {
+   "start": 0.44,
+   "end": 37.48,
+   "label": "verse"
+  },
+  {
+   "start": 37.48,
+   "end": 62.65,
+   "label": "verse"
+  },
+  {
+   "start": 62.65,
+   "end": 86.34,
+   "label": "verse"
+  },
+  {
+   "start": 86.34,
+   "end": 111.52,
+   "label": "chorus"
+  },
+  {
+   "start": 111.52,
+   "end": 129.28,
+   "label": "chorus"
+  },
+  {
+   "start": 129.28,
+   "end": 160.39,
+   "label": "solo"
+  },
+  {
+   "start": 160.39,
+   "end": 184.09,
+   "label": "verse"
+  },
+  {
+   "start": 184.09,
+   "end": 231.46,
+   "label": "chorus"
+  },
+  {
+   "start": 231.46,
+   "end": 256.6,
+   "label": "chorus"
+  },
+  {
+   "start": 256.6,
+   "end": 289.24,
+   "label": "chorus"
+  },
+  {
+   "start": 289.24,
+   "end": 302.54,
+   "label": "outro"
+  },
+  {
+   "start": 302.54,
+   "end": 302.55,
+   "label": "end"
+  }
+ ]
+}

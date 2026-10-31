@@ -99,7 +99,8 @@ extension JobManager {
     /// ones before the chart is built. Leaves everything as it was when there
     /// is no usable form.
     nonisolated static func applyForm(job: inout AnalysisJob, folder: URL, beatData: Data, cleanedData: Data,
-                                      vocals: [SongForm.VocalSpan]? = nil) -> (gridPath: String, gridData: Data,
+                                      vocals: [SongForm.VocalSpan]? = nil,
+                                      model: [SongForm.ModelSection]? = nil) -> (gridPath: String, gridData: Data,
                                                              cleanedPath: String, cleanedData: Data)? {
         let settings = gridSettings(for: job, beatData: beatData)
         let meter = job.beatsPerBarOverride ?? 4
@@ -107,7 +108,7 @@ extension JobManager {
         let pickup = resolvedBeatOffset(job: job, beatData: settings.beatData)
         guard let form = SongForm.analyse(beatData: settings.beatData, cleanedChordData: cleanedData,
                                           audioEnd: audioEnd(job: job), meter: meter, downbeat: pickup,
-                                          vocals: vocals),
+                                          vocals: vocals, model: model),
               let formData = try? JSONEncoder().encode(form),
               let gridData = try? JSONSerialization.data(withJSONObject: formBeatGrid(form, bpm: settings.bpm),
                                                          options: .prettyPrinted),
@@ -134,11 +135,11 @@ extension JobManager {
 
 extension JobManager {
 
-    /// Reads the form again now that vocal timing has arrived, and rebuilds the
-    /// chart when that moves any section or bar. Nil when the vocals change
-    /// nothing, or there is no form to refine.
-    nonisolated static func reapplyForm(job: inout AnalysisJob, folder: URL,
-                                        vocals: [SongForm.VocalSpan]) throws -> (form: SongForm.Result, performerData: Data)? {
+    /// Reads the form again now that vocal timing and the structure model's
+    /// sections have arrived, and rebuilds the chart when that moves any
+    /// section or bar. Nil when they change nothing, or there is no form to refine.
+    nonisolated static func reapplyForm(job: inout AnalysisJob, folder: URL, vocals: [SongForm.VocalSpan]?,
+                                        model: [SongForm.ModelSection]? = nil) throws -> (form: SongForm.Result, performerData: Data)? {
         guard let previous = loadForm(job: job),
               let beatPath = job.beatDetectionPath,
               let beatData = try? Data(contentsOf: URL(fileURLWithPath: beatPath)),
@@ -146,7 +147,7 @@ extension JobManager {
               let cleanedData = try? Data(contentsOf: URL(fileURLWithPath: cleanedPath)) else { return nil }
         var trial = job
         guard let formed = applyForm(job: &trial, folder: folder, beatData: beatData, cleanedData: cleanedData,
-                                     vocals: vocals),
+                                     vocals: vocals, model: model),
               let form = loadForm(job: trial), form.sections != previous.sections else { return nil }
         job = trial
         try buildCharts(job: &job, folder: folder, gridPath: formed.gridPath, gridData: formed.gridData,
