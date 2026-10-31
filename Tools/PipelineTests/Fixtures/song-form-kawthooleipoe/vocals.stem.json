@@ -1,0 +1,22 @@
+{
+ "status": "success",
+ "source": "demucs htdemucs vocal stem, RMS per bar within 15 dB of the 95th percentile",
+ "boundaries": [
+  {
+   "time": 0.21,
+   "sung": true
+  },
+  {
+   "time": 101.6,
+   "sung": false
+  },
+  {
+   "time": 120.35,
+   "sung": true
+  },
+  {
+   "time": 221.6,
+   "sung": false
+  }
+ ]
+}

@@ -97,13 +97,16 @@ run_test() {
   build_stubs || return 1
   # shellcheck disable=SC2046
   swiftc -o "$BUILD/pipeline-tests" "${SWIFT_FLAGS[@]}" \
-    "$APP/AnalysisJob.swift" "$APP/PipelineStage.swift" "$APP/ToolChecker.swift" \
+    "$APP/LocalAnalysisRuntime.swift" "$APP/AnalysisJob.swift" "$APP/PipelineStage.swift" "$APP/ToolChecker.swift" \
     "$APP/ProcessRunner.swift" "$APP/LocalFileStore.swift" "$APP/JobManager.swift" \
-    "$APP/ChartGeneration.swift" "$APP/ChartNavigation.swift" "$APP/SectionStore.swift" \
+    "$APP/ChartGeneration.swift" "$APP/BeatAlignment.swift" "$APP/AudioStructure.swift" "$APP/SongForm.swift" "$APP/SongFormIntegration.swift" "$APP/ChartNavigation.swift" "$APP/SectionStore.swift" \
     "$APP/FirebaseSong.swift" "$APP/StageBeeExportService.swift" \
+    "$APP/SongImportStaging.swift" "$APP/SongImportPayload.swift" "$APP/SongImportWorkspace.swift" "$APP/SongImportProcessing.swift" \
     "$APP/WorkspaceState.swift" "$APP/Library.swift" "$APP/AppCommands.swift" "$APP/DesignKit.swift" \
     $(link_flags) \
-    "$TOOLS_DIR/PipelineTests/FakeBackend.swift" \
+    "$TOOLS_DIR/PipelineTests/FakeBackend.swift" "$TOOLS_DIR/PipelineTests/ImportReviewTests.swift" \
+    "$TOOLS_DIR/PipelineTests/BeatAlignmentTests.swift" "$TOOLS_DIR/PipelineTests/AudioStructureTests.swift" "$TOOLS_DIR/PipelineTests/SongFormTests.swift" \
+    "$TOOLS_DIR/PipelineTests/TimingIntegrationTests.swift" \
     "$TOOLS_DIR/PipelineTests/main.swift" || return 1
   # Never point the file store at the real Application Support data, and never
   # at the real backend — the tests drive a stub on a free port instead.
@@ -160,7 +163,7 @@ run_app_build() {
   mkdir -p "$macos" "$frameworks"
 
   # shellcheck disable=SC2046
-  swiftc -o "$macos/ChordAdmin" "${SWIFT_FLAGS[@]}" \
+  swiftc -D CHORDADMIN_VERIFY -o "$macos/ChordAdmin" "${SWIFT_FLAGS[@]}" \
     -I "$BUILD" -L "$BUILD" -lFirebaseCore -lFirebaseAuth -lFirebaseFirestore \
     -Xlinker -rpath -Xlinker "@executable_path/../Frameworks" \
     $(app_sources) "$APP/ChordAdminApp.swift" || return 1
@@ -215,10 +218,11 @@ run_real() {
   build_stubs || return 1
   # shellcheck disable=SC2046
   swiftc -o "$BUILD/real-run" "${SWIFT_FLAGS[@]}" \
-    "$APP/AnalysisJob.swift" "$APP/PipelineStage.swift" "$APP/ToolChecker.swift" \
+    "$APP/LocalAnalysisRuntime.swift" "$APP/AnalysisJob.swift" "$APP/PipelineStage.swift" "$APP/ToolChecker.swift" \
     "$APP/ProcessRunner.swift" "$APP/LocalFileStore.swift" "$APP/JobManager.swift" \
-    "$APP/ChartGeneration.swift" "$APP/ChartNavigation.swift" "$APP/SectionStore.swift" \
+    "$APP/ChartGeneration.swift" "$APP/BeatAlignment.swift" "$APP/AudioStructure.swift" "$APP/SongForm.swift" "$APP/SongFormIntegration.swift" "$APP/ChartNavigation.swift" "$APP/SectionStore.swift" \
     "$APP/FirebaseSong.swift" "$APP/StageBeeExportService.swift" \
+    "$APP/SongImportStaging.swift" "$APP/SongImportPayload.swift" "$APP/SongImportWorkspace.swift" "$APP/SongImportProcessing.swift" \
     "$APP/WorkspaceState.swift" "$APP/Library.swift" "$APP/AppCommands.swift" \
     "$APP/DesignKit.swift" \
     $(link_flags) "$TOOLS_DIR/RealRun/main.swift" || return 1
@@ -230,8 +234,39 @@ run_real() {
   CHORDADMIN_JOBS_DIR="$jobs_dir" "$BUILD/real-run" "$@"
 }
 
+run_runtime_tests() {
+  build_stubs || return 1
+  swiftc -o "$BUILD/runtime-tests" "${SWIFT_FLAGS[@]}" $(link_flags) \
+    $(app_sources) "$TOOLS_DIR/RuntimeTests/main.swift" || return 1
+  local jobs_dir
+  jobs_dir=$(mktemp -d "${TMPDIR:-/tmp}/chordadmin-runtime-tests-XXXXXX")
+  env -u CHORDADMIN_BACKEND_URL CHORDADMIN_JOBS_DIR="$jobs_dir" \
+    "$BUILD/runtime-tests" "$ROOT/Tools/.runtime-dist/ChordAdminAnalysis.app/Contents/MacOS/chordadmin-analysis"
+}
+
+run_sidebar_test() {
+  build_stubs || return 1
+  local bundle="$BUILD/ChordAdminSidebarTest.app"
+  mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Frameworks"
+  swiftc -parse-as-library -o "$bundle/Contents/MacOS/ChordAdminSidebarTest" "${SWIFT_FLAGS[@]}" $(link_flags) \
+    $(app_sources) "$TOOLS_DIR/SidebarHarness/main.swift" || return 1
+  cp "$BUILD"/libFirebase*.dylib "$bundle/Contents/Frameworks/"
+  cat > "$bundle/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict>
+<key>CFBundleName</key><string>ChordAdmin Sidebar Test</string>
+<key>CFBundleExecutable</key><string>ChordAdminSidebarTest</string>
+<key>CFBundleIdentifier</key><string>local.chordadmin.sidebar-test</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+</dict></plist>
+PLIST
+  codesign --force --sign - "$bundle" >/dev/null 2>&1
+  echo "$bundle"
+}
+
 command="${1:-all}"
 case "$command" in
+  runtime) run_runtime_tests ;;
+  sidebar) run_sidebar_test ;;
   check)  run_check ;;
   stress) run_stress ;;
   real)   shift; run_real "$@" ;;

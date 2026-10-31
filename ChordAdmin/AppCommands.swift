@@ -25,6 +25,8 @@ struct SongActions {
     var focusSearch: () -> Void = {}
     var refreshLibrary: () -> Void = {}
     var recheckEnvironment: () -> Void = {}
+    var reviewImports: () -> Void = {}
+    var canReviewImports = false
 }
 
 private struct SongActionsKey: FocusedValueKey {
@@ -78,7 +80,11 @@ struct ChordAdminCommands: Commands {
     @AppStorage(TextSizeSetting.storageKey) private var textSize = TextSizeSetting.defaultRawValue
 
     var body: some Commands {
-        CommandGroup(replacing: .newItem) {}
+        CommandGroup(replacing: .newItem) {
+            Button("Song Imports…") { actions?.reviewImports() }
+                .keyboardShortcut("n", modifiers: .command)
+                .disabled(!(actions?.canReviewImports ?? false))
+        }
 
         CommandMenu("Song") {
             Button(actions?.canCancel == true ? "Cancel Analysis" : "Analyse") {

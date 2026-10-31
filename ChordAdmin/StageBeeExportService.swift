@@ -26,6 +26,22 @@ struct ExportPreview: Identifiable {
     let songTitle: String
     let artist: String?
     let documentID: String
+    var publication: SongImportRecord? = nil
+    var importChartsVersion: Int? = nil
+    var importEditedAt: Date? = nil
+    func matchesImportAnalysis(_ job: AnalysisJob?) -> Bool {
+        guard publication != nil else { return true }
+        guard let job else { return false }
+        return job.id == jobID && job.chartsVersion == importChartsVersion && job.lastEditedAt == importEditedAt
+            && job.songDocumentID == songID && job.isExportable
+    }
+
+    var isNewImport: Bool { publication?.targetSongID == nil && publication != nil }
+    var targetDocumentID: String {
+        guard let publication else { return documentID }
+        return SongImportNormalizer.canonicalSongID(targetSongID: publication.targetSongID,
+                                                    source: publication.source, stagingID: publication.id)
+    }
 
     let currentTempo: Int?
     let newTempo: Int?
@@ -37,6 +53,12 @@ struct ExportPreview: Identifiable {
     let tempoPayload: Any
 
     var tempoChanged: Bool { currentTempo != newTempo }
+
+    /// The key the song's form analysis found; nil when the analysis has none,
+    /// and then the document's key is left alone.
+    var currentKey: String? = nil
+    var newKey: String? = nil
+    var keyChanged: Bool { newKey != nil && currentKey != newKey }
 
     var summary: String {
         "\(newSections.count) sections"
@@ -135,12 +157,17 @@ final class StageBeeExportService: ObservableObject {
     /// Writes a prepared preview to Firestore and returns what was recorded.
     @discardableResult
     func commit(_ preview: ExportPreview) async throws -> ExportRecord {
+        guard preview.publication == nil else {
+            throw ExportError.identityMismatch("Publish staged imports through the review transaction.")
+        }
         state = .exporting
         do {
-            try await db.collection("songs").document(preview.documentID).updateData([
+            var fields: [String: Any] = [
                 "sections": preview.sectionsPayload,
                 "tempo": preview.tempoPayload,
-            ])
+            ]
+            if let key = preview.newKey, !key.isEmpty { fields["key"] = key }
+            try await db.collection("songs").document(preview.documentID).updateData(fields)
             state = .success(documentID: preview.documentID)
             return ExportRecord(
                 exportedAt: Date(),
@@ -180,6 +207,10 @@ final class StageBeeExportService: ObservableObject {
             )
         }
 
+        guard await LocalAnalysisRuntime.shared.ensureReady() else {
+            throw ExportError.backendUnavailable(LocalAnalysisRuntime.shared.lastFailure ?? "Local analysis is starting. Try again shortly.")
+        }
+
         // 1 — Translate via the local backend ------------------------------------
         guard let url = URL(string: "\(Self.backendBase)/api/translate-to-stagebee") else {
             throw ExportError.backendUnavailable("Invalid URL")
@@ -187,6 +218,7 @@ final class StageBeeExportService: ObservableObject {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        BackendConnection.shared.authorize(&request)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let subdivisions = job.subdivisionsByBar
@@ -225,8 +257,16 @@ final class StageBeeExportService: ObservableObject {
             throw ExportError.backendRejected("The translation returned a tempo that is not a number")
         }
 
+        // Bars the song's form made longer or shorter than the meter (a 6/4 in
+        // a 4/4 song) — the translator writes every bar in the meter.
+        var stageBeeSections = sections
+        if let form = JobManager.loadForm(job: job) {
+            stageBeeSections = Self.applyingFormMeter(to: sections, form: form,
+                                                      editedBars: Set(subdivisions.keys))
+        }
+
         // 2 — Describe what will change ------------------------------------------
-        let newSections = Self.describeSections(sections)
+        let newSections = Self.describeSections(stageBeeSections)
         guard !newSections.isEmpty else {
             throw ExportError.backendRejected("The translation produced no sections")
         }
@@ -241,12 +281,14 @@ final class StageBeeExportService: ObservableObject {
             newTempo: tempoValue,
             currentSectionNames: song.sections?.map { $0.displayName } ?? [],
             newSections: newSections,
-            sectionsPayload: sections,
+            sectionsPayload: stageBeeSections,
             // The validated integer, not the raw payload: the sheet promises
             // "136 BPM", and writing the backend's 136.4 back would make the
             // confirmation a lie about what was actually stored. The document's
             // own `tempo` is an Int, so this also keeps the field's type stable.
-            tempoPayload: tempoValue
+            tempoPayload: tempoValue,
+            currentKey: song.key,
+            newKey: job.songKey
         )
     }
 

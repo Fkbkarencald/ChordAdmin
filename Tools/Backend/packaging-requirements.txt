@@ -1,0 +1,3 @@
+pyinstaller==6.16.0
+pyinstaller-hooks-contrib==2025.9
+setuptools==70.3.0

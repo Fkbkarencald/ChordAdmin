@@ -13,6 +13,18 @@ final class EnvironmentStore: ObservableObject {
     @Published private(set) var backendAvailable: Bool?
     @Published private(set) var isChecking = false
     @Published private(set) var lastCheckedAt: Date?
+    private var lifecycle: AnyCancellable?
+
+    init() {
+        lifecycle = LocalAnalysisRuntime.shared.$state.sink { [weak self] state in
+            switch state {
+            case .ready: self?.backendAvailable = true
+            case .failed, .stopped: self?.backendAvailable = false
+            case .starting: self?.backendAvailable = nil
+            case .external: break
+            }
+        }
+    }
 
     var isReady: Bool { (tools?.allAvailable ?? false) && backendAvailable == true }
 
@@ -27,7 +39,7 @@ final class EnvironmentStore: ObservableObject {
         defer { isChecking = false }
 
         async let toolReport = try? ToolChecker.check()
-        async let backend = JobManager.checkBackendHealth()
+        async let backend = LocalAnalysisRuntime.shared.ensureReady()
 
         let report = await toolReport
         backendAvailable = await backend
@@ -41,7 +53,7 @@ final class EnvironmentStore: ObservableObject {
     /// Re-checks only the backend — the common case while starting the Python
     /// service in another window.
     func refreshBackend() async {
-        backendAvailable = await JobManager.checkBackendHealth()
+        backendAvailable = await LocalAnalysisRuntime.shared.recover()
         lastCheckedAt = Date()
     }
 }

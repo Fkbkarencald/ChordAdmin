@@ -20,6 +20,8 @@ struct ChordAdminApp: App {
         WindowGroup {
             ContentView(appDelegate: appDelegate)
         }
+        .defaultSize(width: 1280, height: 800)
+        .windowResizability(.contentMinSize)
         .commands { ChordAdminCommands() }
     }
 }

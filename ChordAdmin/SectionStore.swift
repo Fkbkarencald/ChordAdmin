@@ -74,7 +74,9 @@ final class SectionStore: ObservableObject {
         }
 
         let candidates = loadCandidates(job: job)
-        if !candidates.isEmpty {
+        if let audio = audioSections(job: job, allBars: allBars) {
+            sections = audio
+        } else if !candidates.isEmpty {
             sections = buildSectionsFromCandidates(candidates, allBars: allBars)
         } else {
             sections = [ChordSection(
@@ -83,7 +85,12 @@ final class SectionStore: ObservableObject {
                 bars: allBars
             )]
         }
-        save(notify: false)
+        // A chart may become visible while its acoustic section pass is still
+        // running. Keep the provisional split in memory; an actual user edit
+        // still saves immediately and is protected by the pipeline.
+        if job.status != .generatingChordChart && job.status != .detectingSections {
+            save(notify: false)
+        }
     }
 
     /// True when this store already holds the sections for `job`.
@@ -170,10 +177,15 @@ final class SectionStore: ObservableObject {
     /// Rebuilds sections from the detected repeats for `job`, discarding the
     /// current split. Used by the inspector's "Detect sections again".
     func autoDetectSections(for job: AnalysisJob) {
-        let candidates = loadCandidates(job: job)
-        guard !candidates.isEmpty else { return }
         let allBars = sections.flatMap(\.bars).sorted()
         guard !allBars.isEmpty else { return }
+        if let audio = audioSections(job: job, allBars: allBars) {
+            sections = audio
+            save()
+            return
+        }
+        let candidates = loadCandidates(job: job)
+        guard !candidates.isEmpty else { return }
         sections = buildSectionsFromCandidates(candidates, allBars: allBars)
         save()
     }
@@ -181,7 +193,19 @@ final class SectionStore: ObservableObject {
     /// How many repeats were detected, so the UI can say whether re-detecting
     /// would do anything.
     func candidateCount(for job: AnalysisJob) -> Int {
-        loadCandidates(job: job).count
+        if let sections = audioSections(job: job, allBars: barsFrom(job: job)) { return sections.count }
+        return loadCandidates(job: job).count
+    }
+
+    func hasAudioBoundaries(for job: AnalysisJob) -> Bool {
+        audioSections(job: job, allBars: barsFrom(job: job)) != nil
+    }
+
+    private func audioSections(job: AnalysisJob, allBars: [Int]) -> [ChordSection]? {
+        guard let path = job.sectionCandidatesPath,
+              let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return JobManager.sectionsFromAudioBoundaries(payload, allBars: allBars)
     }
 
 

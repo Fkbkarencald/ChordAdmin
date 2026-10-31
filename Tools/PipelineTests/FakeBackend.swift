@@ -17,6 +17,10 @@ final class FakeBackend: @unchecked Sendable {
         var chordsStatus = 200
         /// Beat times returned by /api/detect-beats.
         var beats: [Double] = (0..<64).map { Double($0) * 0.5 }
+        /// Optional joint-downbeat phase, one position per returned beat.
+        var beatPositions: [Int]?
+        var beatsPerBar = 4
+        var suggestedPickupBeats: Int?
         var bpm: Double = 120
         /// Chords returned by /api/recognize-chords.
         var chords: [(String, Double, Double)] = {
@@ -46,6 +50,15 @@ final class FakeBackend: @unchecked Sendable {
         /// Holds the beat-detection reply back, so cancellation can be tested
         /// against a request that is genuinely in flight.
         var beatsDelay: TimeInterval = 0
+        /// Audio-structure support is additive; legacy test backends omit it.
+        var structureCapability = false
+        var structureDelay: TimeInterval = 0
+        var structureStatus = 200
+        var structureResponse: [String: Any] = [
+            "status": "success", "version": 1, "method": "multiscale-audio-novelty",
+            "boundaries": [["bar": 1, "time": 0.0, "score": 1.0]],
+            "warnings": [String](),
+        ]
     }
 
     /// One section in the translated payload, bars grouped four to a line.
@@ -178,21 +191,35 @@ final class FakeBackend: @unchecked Sendable {
             // uses to tell it apart from anything else on the same port.
             payload = ["status": "healthy",
                        "service": current.healthServiceName,
-                       "version": "0.1.0"]
+                       "version": "0.1.0",
+                       "capabilities": ["audioStructure": current.structureCapability]]
         case "/api/detect-beats":
             status = current.beatsStatus
             if let message = current.beatsReportsErrorAt200 {
                 payload = ["status": "error", "message": message,
                            "details": "Supported models: madmom"]
             } else if status == 200 {
-                payload = current.beatsEmpty
+                var beatPayload: [String: Any] = current.beatsEmpty
                     ? ["status": "success", "bpm": 0, "beats": [], "model": "madmom"]
                     : ["status": "success",
                        "bpm": current.bpm,
-                       "beats": current.beats.map { ["time": $0, "confidence": NSNull()] },
+                       "beats": current.beats.enumerated().map { index, time -> [String: Any] in
+                           var beat: [String: Any] = ["time": time, "confidence": NSNull()]
+                           if let positions = current.beatPositions, index < positions.count {
+                               beat["beatInBar"] = positions[index]
+                           }
+                           return beat
+                       },
                        "beatCount": current.beats.count,
                        "model": "madmom",
                        "warnings": [String]()]
+                if current.beatPositions != nil {
+                    beatPayload["beatsPerBar"] = current.beatsPerBar
+                    if let pickup = current.suggestedPickupBeats {
+                        beatPayload["suggestedPickupBeats"] = pickup
+                    }
+                }
+                payload = beatPayload
             } else {
                 payload = ["status": "error", "message": "chord model failed to load"]
             }
@@ -220,6 +247,9 @@ final class FakeBackend: @unchecked Sendable {
             } else {
                 payload = ["status": "error", "message": "job folder is incomplete"]
             }
+        case "/api/detect-structure":
+            status = current.structureStatus
+            payload = current.structureResponse
         default:
             status = 404
             payload = ["message": "no such endpoint"]
@@ -227,6 +257,9 @@ final class FakeBackend: @unchecked Sendable {
 
         if path == "/api/detect-beats", current.beatsDelay > 0 {
             Thread.sleep(forTimeInterval: current.beatsDelay)
+        }
+        if path == "/api/detect-structure", current.structureDelay > 0 {
+            Thread.sleep(forTimeInterval: current.structureDelay)
         }
 
         let body = (try? JSONSerialization.data(withJSONObject: payload)) ?? Data()

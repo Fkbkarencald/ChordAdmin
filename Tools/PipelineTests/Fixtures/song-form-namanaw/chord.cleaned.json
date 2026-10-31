@@ -1,0 +1,807 @@
+{
+  "chords" : [
+    {
+      "end" : 0.72,
+      "displayChord" : "N.C.",
+      "rawChord" : "N",
+      "confidence" : null,
+      "start" : 0
+    },
+    {
+      "displayChord" : "Em",
+      "rawChord" : "E:min",
+      "start" : 0.72,
+      "end" : 4.435,
+      "confidence" : null
+    },
+    {
+      "displayChord" : "D",
+      "rawChord" : "D:maj",
+      "end" : 7.895,
+      "confidence" : null,
+      "start" : 4.435
+    },
+    {
+      "displayChord" : "Em",
+      "rawChord" : "E:min",
+      "end" : 11.703,
+      "confidence" : null,
+      "start" : 7.895
+    },
+    {
+      "start" : 11.703,
+      "rawChord" : "A:sus4",
+      "displayChord" : "Asus4",
+      "confidence" : null,
+      "end" : 15.186
+    },
+    {
+      "displayChord" : "Em",
+      "rawChord" : "E:min",
+      "confidence" : null,
+      "end" : 17.485,
+      "start" : 15.186
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "G:maj",
+      "displayChord" : "G",
+      "end" : 18.878,
+      "start" : 17.485
+    },
+    {
+      "rawChord" : "D:maj",
+      "end" : 20.666,
+      "start" : 18.878,
+      "confidence" : null,
+      "displayChord" : "D"
+    },
+    {
+      "start" : 20.666,
+      "displayChord" : "Em",
+      "confidence" : null,
+      "rawChord" : "E:min",
+      "end" : 24.451
+    },
+    {
+      "rawChord" : "G:maj",
+      "displayChord" : "G",
+      "confidence" : null,
+      "start" : 24.451,
+      "end" : 26.006
+    },
+    {
+      "confidence" : null,
+      "displayChord" : "D",
+      "rawChord" : "D:maj",
+      "end" : 29.582,
+      "start" : 26.006
+    },
+    {
+      "start" : 29.582,
+      "rawChord" : "E:min",
+      "end" : 31.486,
+      "displayChord" : "Em",
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "G:maj",
+      "displayChord" : "G",
+      "end" : 33.274,
+      "start" : 31.486
+    },
+    {
+      "rawChord" : "D:maj",
+      "start" : 33.274,
+      "end" : 34.807,
+      "confidence" : null,
+      "displayChord" : "D"
+    },
+    {
+      "displayChord" : "Em",
+      "rawChord" : "E:min",
+      "start" : 34.807,
+      "confidence" : null,
+      "end" : 38.638
+    },
+    {
+      "end" : 40.38,
+      "displayChord" : "G",
+      "rawChord" : "G:maj",
+      "start" : 38.638,
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "displayChord" : "D",
+      "rawChord" : "D:maj",
+      "start" : 40.38,
+      "end" : 42.121
+    },
+    {
+      "start" : 42.121,
+      "rawChord" : "G:maj",
+      "end" : 45.697,
+      "confidence" : null,
+      "displayChord" : "G"
+    },
+    {
+      "end" : 47.531,
+      "displayChord" : "C",
+      "rawChord" : "C:maj",
+      "confidence" : null,
+      "start" : 45.697
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "D:maj",
+      "displayChord" : "D",
+      "start" : 47.531,
+      "end" : 49.319
+    },
+    {
+      "end" : 51.107,
+      "rawChord" : "B:min",
+      "displayChord" : "Bm",
+      "confidence" : null,
+      "start" : 49.319
+    },
+    {
+      "confidence" : null,
+      "start" : 51.107,
+      "end" : 52.918,
+      "rawChord" : "E:min",
+      "displayChord" : "Em"
+    },
+    {
+      "displayChord" : "C",
+      "confidence" : null,
+      "end" : 54.706,
+      "start" : 52.918,
+      "rawChord" : "C:maj"
+    },
+    {
+      "confidence" : null,
+      "start" : 54.706,
+      "end" : 56.471,
+      "displayChord" : "D",
+      "rawChord" : "D:maj"
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "E:min",
+      "displayChord" : "Em",
+      "end" : 61.858,
+      "start" : 56.471
+    },
+    {
+      "end" : 63.646,
+      "displayChord" : "G",
+      "rawChord" : "G:maj",
+      "start" : 61.858,
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "end" : 65.411,
+      "start" : 63.646,
+      "displayChord" : "D",
+      "rawChord" : "D:maj"
+    },
+    {
+      "end" : 69.01,
+      "start" : 65.411,
+      "rawChord" : "E:min",
+      "displayChord" : "Em",
+      "confidence" : null
+    },
+    {
+      "rawChord" : "G:maj",
+      "start" : 69.01,
+      "end" : 70.798,
+      "displayChord" : "G",
+      "confidence" : null
+    },
+    {
+      "end" : 72.586,
+      "start" : 70.798,
+      "confidence" : null,
+      "displayChord" : "D",
+      "rawChord" : "D:maj"
+    },
+    {
+      "rawChord" : "G:maj",
+      "start" : 72.586,
+      "displayChord" : "G",
+      "confidence" : null,
+      "end" : 76.185
+    },
+    {
+      "end" : 77.973,
+      "rawChord" : "C:maj",
+      "confidence" : null,
+      "start" : 76.185,
+      "displayChord" : "C"
+    },
+    {
+      "end" : 79.761,
+      "start" : 77.973,
+      "displayChord" : "D",
+      "rawChord" : "D:maj",
+      "confidence" : null
+    },
+    {
+      "rawChord" : "B:min",
+      "confidence" : null,
+      "end" : 81.548,
+      "start" : 79.761,
+      "displayChord" : "Bm"
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "E:min",
+      "end" : 83.336,
+      "start" : 81.548,
+      "displayChord" : "Em"
+    },
+    {
+      "rawChord" : "C:maj",
+      "end" : 85.101,
+      "displayChord" : "C",
+      "start" : 83.336,
+      "confidence" : null
+    },
+    {
+      "rawChord" : "D:maj",
+      "end" : 86.912,
+      "start" : 85.101,
+      "displayChord" : "D",
+      "confidence" : null
+    },
+    {
+      "end" : 94.087,
+      "confidence" : null,
+      "rawChord" : "E:min",
+      "displayChord" : "Em",
+      "start" : 86.912
+    },
+    {
+      "end" : 97.663,
+      "start" : 94.087,
+      "confidence" : null,
+      "displayChord" : "G",
+      "rawChord" : "G:maj"
+    },
+    {
+      "start" : 97.663,
+      "confidence" : null,
+      "displayChord" : "Am",
+      "rawChord" : "A:min",
+      "end" : 101.262
+    },
+    {
+      "start" : 101.262,
+      "displayChord" : "Em",
+      "end" : 108.437,
+      "rawChord" : "E:min",
+      "confidence" : null
+    },
+    {
+      "start" : 108.437,
+      "rawChord" : "G:maj",
+      "end" : 111.967,
+      "displayChord" : "G",
+      "confidence" : null
+    },
+    {
+      "start" : 111.967,
+      "confidence" : null,
+      "rawChord" : "A:min",
+      "displayChord" : "Am",
+      "end" : 115.566
+    },
+    {
+      "displayChord" : "B",
+      "confidence" : null,
+      "end" : 119.118,
+      "start" : 115.566,
+      "rawChord" : "B:maj"
+    },
+    {
+      "displayChord" : "Em",
+      "end" : 122.764,
+      "start" : 119.118,
+      "confidence" : null,
+      "rawChord" : "E:min"
+    },
+    {
+      "confidence" : null,
+      "end" : 126.247,
+      "start" : 122.764,
+      "displayChord" : "G",
+      "rawChord" : "G:maj"
+    },
+    {
+      "displayChord" : "Am",
+      "confidence" : null,
+      "end" : 129.916,
+      "start" : 126.247,
+      "rawChord" : "A:min"
+    },
+    {
+      "confidence" : null,
+      "end" : 133.375,
+      "displayChord" : "B",
+      "start" : 129.916,
+      "rawChord" : "B:maj"
+    },
+    {
+      "start" : 133.375,
+      "displayChord" : "Em",
+      "confidence" : null,
+      "end" : 137.044,
+      "rawChord" : "E:min"
+    },
+    {
+      "end" : 140.666,
+      "start" : 137.044,
+      "rawChord" : "C:maj",
+      "displayChord" : "C",
+      "confidence" : null
+    },
+    {
+      "start" : 140.666,
+      "rawChord" : "A:min",
+      "confidence" : null,
+      "end" : 144.289,
+      "displayChord" : "Am"
+    },
+    {
+      "end" : 147.795,
+      "start" : 144.289,
+      "confidence" : null,
+      "rawChord" : "B:maj",
+      "displayChord" : "B"
+    },
+    {
+      "start" : 147.795,
+      "end" : 151.394,
+      "confidence" : null,
+      "displayChord" : "C",
+      "rawChord" : "C:maj"
+    },
+    {
+      "rawChord" : "G:maj",
+      "end" : 154.993,
+      "confidence" : null,
+      "displayChord" : "G",
+      "start" : 151.394
+    },
+    {
+      "confidence" : null,
+      "end" : 158.569,
+      "start" : 154.993,
+      "rawChord" : "A:min",
+      "displayChord" : "Am"
+    },
+    {
+      "confidence" : null,
+      "end" : 162.145,
+      "rawChord" : "E:min",
+      "displayChord" : "Em",
+      "start" : 158.569
+    },
+    {
+      "rawChord" : "C:maj",
+      "displayChord" : "C",
+      "confidence" : null,
+      "start" : 162.145,
+      "end" : 165.744
+    },
+    {
+      "rawChord" : "G:maj",
+      "displayChord" : "G",
+      "confidence" : null,
+      "start" : 165.744,
+      "end" : 169.32
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "A:min",
+      "displayChord" : "Am",
+      "end" : 172.896,
+      "start" : 169.32
+    },
+    {
+      "end" : 176.472,
+      "displayChord" : "B",
+      "confidence" : null,
+      "start" : 172.896,
+      "rawChord" : "B:maj"
+    },
+    {
+      "rawChord" : "E:min",
+      "start" : 176.472,
+      "displayChord" : "Em",
+      "end" : 178.306,
+      "confidence" : null
+    },
+    {
+      "rawChord" : "G:maj",
+      "start" : 178.306,
+      "end" : 180.071,
+      "displayChord" : "G",
+      "confidence" : null
+    },
+    {
+      "displayChord" : "D",
+      "confidence" : null,
+      "end" : 181.835,
+      "rawChord" : "D:maj",
+      "start" : 180.071
+    },
+    {
+      "start" : 181.835,
+      "confidence" : null,
+      "end" : 185.458,
+      "rawChord" : "E:min",
+      "displayChord" : "Em"
+    },
+    {
+      "start" : 185.458,
+      "displayChord" : "G",
+      "rawChord" : "G:maj",
+      "confidence" : null,
+      "end" : 187.246
+    },
+    {
+      "start" : 187.246,
+      "rawChord" : "D:maj",
+      "end" : 189.01,
+      "displayChord" : "D",
+      "confidence" : null
+    },
+    {
+      "displayChord" : "G",
+      "start" : 189.01,
+      "end" : 192.586,
+      "rawChord" : "G:maj",
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "C:maj",
+      "displayChord" : "C",
+      "start" : 192.586,
+      "end" : 194.397
+    },
+    {
+      "confidence" : null,
+      "start" : 194.397,
+      "displayChord" : "D",
+      "rawChord" : "D:maj",
+      "end" : 196.162
+    },
+    {
+      "end" : 197.95,
+      "displayChord" : "Bm",
+      "start" : 196.162,
+      "confidence" : null,
+      "rawChord" : "B:min"
+    },
+    {
+      "rawChord" : "E:min",
+      "displayChord" : "Em",
+      "end" : 199.761,
+      "start" : 197.95,
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "displayChord" : "C",
+      "end" : 201.572,
+      "rawChord" : "C:maj",
+      "start" : 199.761
+    },
+    {
+      "displayChord" : "D",
+      "confidence" : null,
+      "end" : 203.337,
+      "rawChord" : "D:maj",
+      "start" : 201.572
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "E:min",
+      "end" : 208.724,
+      "displayChord" : "Em",
+      "start" : 203.337
+    },
+    {
+      "displayChord" : "G",
+      "rawChord" : "G:maj",
+      "confidence" : null,
+      "end" : 210.512,
+      "start" : 208.724
+    },
+    {
+      "confidence" : null,
+      "start" : 210.512,
+      "end" : 212.277,
+      "displayChord" : "D",
+      "rawChord" : "D:maj"
+    },
+    {
+      "displayChord" : "Em",
+      "rawChord" : "E:min",
+      "start" : 212.277,
+      "end" : 215.876,
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "G:maj",
+      "start" : 215.876,
+      "end" : 217.687,
+      "displayChord" : "G"
+    },
+    {
+      "end" : 219.475,
+      "start" : 217.687,
+      "displayChord" : "D",
+      "confidence" : null,
+      "rawChord" : "D:maj"
+    },
+    {
+      "rawChord" : "G:maj",
+      "start" : 219.475,
+      "end" : 223.028,
+      "confidence" : null,
+      "displayChord" : "G"
+    },
+    {
+      "rawChord" : "C:maj",
+      "start" : 223.028,
+      "displayChord" : "C",
+      "end" : 224.839,
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "D:maj",
+      "displayChord" : "D",
+      "start" : 224.839,
+      "end" : 226.627
+    },
+    {
+      "start" : 226.627,
+      "confidence" : null,
+      "rawChord" : "B:min",
+      "displayChord" : "Bm",
+      "end" : 228.415
+    },
+    {
+      "displayChord" : "Em",
+      "end" : 230.203,
+      "confidence" : null,
+      "start" : 228.415,
+      "rawChord" : "E:min"
+    },
+    {
+      "rawChord" : "C:maj",
+      "displayChord" : "C",
+      "end" : 231.991,
+      "start" : 230.203,
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "end" : 233.779,
+      "start" : 231.991,
+      "displayChord" : "D",
+      "rawChord" : "D:maj"
+    },
+    {
+      "rawChord" : "E:min",
+      "start" : 233.779,
+      "end" : 240.953,
+      "confidence" : null,
+      "displayChord" : "Em"
+    },
+    {
+      "rawChord" : "G:maj",
+      "start" : 240.953,
+      "end" : 244.529,
+      "displayChord" : "G",
+      "confidence" : null
+    },
+    {
+      "displayChord" : "Am",
+      "end" : 248.128,
+      "start" : 244.529,
+      "confidence" : null,
+      "rawChord" : "A:min"
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "E:min",
+      "displayChord" : "Em",
+      "end" : 255.28,
+      "start" : 248.128
+    },
+    {
+      "displayChord" : "G",
+      "start" : 255.28,
+      "end" : 258.81,
+      "rawChord" : "G:maj",
+      "confidence" : null
+    },
+    {
+      "start" : 258.81,
+      "end" : 262.432,
+      "displayChord" : "Am",
+      "confidence" : null,
+      "rawChord" : "A:min"
+    },
+    {
+      "displayChord" : "B7",
+      "start" : 262.432,
+      "rawChord" : "B:7",
+      "confidence" : null,
+      "end" : 265.985
+    },
+    {
+      "displayChord" : "Em",
+      "rawChord" : "E:min",
+      "confidence" : null,
+      "end" : 269.63,
+      "start" : 265.985
+    },
+    {
+      "confidence" : null,
+      "end" : 273.136,
+      "displayChord" : "G",
+      "rawChord" : "G:maj",
+      "start" : 269.63
+    },
+    {
+      "start" : 273.136,
+      "displayChord" : "Am",
+      "rawChord" : "A:min",
+      "end" : 276.782,
+      "confidence" : null
+    },
+    {
+      "rawChord" : "B:7",
+      "end" : 280.126,
+      "confidence" : null,
+      "displayChord" : "B7",
+      "start" : 276.782
+    },
+    {
+      "start" : 280.126,
+      "confidence" : null,
+      "displayChord" : "Em",
+      "end" : 287.486,
+      "rawChord" : "E:min"
+    },
+    {
+      "start" : 287.486,
+      "rawChord" : "G:maj",
+      "displayChord" : "G",
+      "end" : 291.062,
+      "confidence" : null
+    },
+    {
+      "end" : 294.638,
+      "rawChord" : "A:min",
+      "displayChord" : "Am",
+      "start" : 291.062,
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "displayChord" : "Em",
+      "rawChord" : "E:min",
+      "end" : 301.859,
+      "start" : 294.638
+    },
+    {
+      "confidence" : null,
+      "end" : 305.366,
+      "rawChord" : "G:maj",
+      "start" : 301.859,
+      "displayChord" : "G"
+    },
+    {
+      "start" : 305.366,
+      "displayChord" : "Am",
+      "rawChord" : "A:min",
+      "end" : 309.011,
+      "confidence" : null
+    },
+    {
+      "displayChord" : "B",
+      "rawChord" : "B:maj",
+      "confidence" : null,
+      "start" : 309.011,
+      "end" : 312.564
+    },
+    {
+      "rawChord" : "E:min",
+      "confidence" : null,
+      "end" : 316.186,
+      "displayChord" : "Em",
+      "start" : 312.564
+    },
+    {
+      "end" : 319.692,
+      "rawChord" : "G:maj",
+      "start" : 316.186,
+      "confidence" : null,
+      "displayChord" : "G"
+    },
+    {
+      "displayChord" : "Am",
+      "start" : 319.692,
+      "end" : 323.315,
+      "rawChord" : "A:min",
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "end" : 326.682,
+      "start" : 323.315,
+      "displayChord" : "B",
+      "rawChord" : "B:maj"
+    },
+    {
+      "start" : 326.682,
+      "rawChord" : "E:min",
+      "displayChord" : "Em",
+      "confidence" : null,
+      "end" : 336.062
+    },
+    {
+      "displayChord" : "G",
+      "end" : 337.572,
+      "start" : 336.062,
+      "rawChord" : "G:maj",
+      "confidence" : null
+    },
+    {
+      "confidence" : null,
+      "displayChord" : "D",
+      "rawChord" : "D:maj",
+      "end" : 339.29,
+      "start" : 337.572
+    },
+    {
+      "rawChord" : "N",
+      "start" : 339.29,
+      "end" : 340.939,
+      "confidence" : null,
+      "displayChord" : "N.C."
+    },
+    {
+      "start" : 340.939,
+      "confidence" : null,
+      "displayChord" : "Em",
+      "end" : 345.466,
+      "rawChord" : "E:min"
+    },
+    {
+      "confidence" : null,
+      "rawChord" : "N",
+      "displayChord" : "N.C.",
+      "end" : 346.72,
+      "start" : 345.466
+    }
+  ],
+  "source" : "chord.recognition.json",
+  "chordCount" : 114,
+  "warnings" : [
+
+  ]
+}

@@ -1,5 +1,20 @@
 # ChordAdmin Project Context
 
+## Current runtime and layout update — 27 October 2026
+
+ChordAdmin now embeds its real Python analysis stack, models and native media
+tools in `Contents/Helpers/ChordAdminAnalysis.app`. `LocalAnalysisRuntime` owns
+startup, authenticated health, bounded crash recovery and shutdown. End users
+open one app; there is no separate service to start. The port is selected at
+launch, not fixed at 5051. Examples below using 5051 describe the older external
+backend workflow and apply only when a developer sets `CHORDADMIN_BACKEND_URL`.
+The September workspace and uncommitted import-review integration are preserved.
+The root uses one native three-pane split, with bounded sidebar controls and an
+independently scrolling list; saved local analyses can be browsed before cloud
+catalogue loading. Build/distribution details and validation boundaries are in
+`docs/local-runtime-and-sidebar-2026-10-27.md`.
+
+
 ---
 
 ## 1. Project Overview

@@ -74,6 +74,7 @@ struct InspectorView: View {
                 bars: bars,
                 selectedBar: $selectedBar,
                 sectionStore: sectionStore,
+                jobManager: jobManager,
                 subdivisions: job?.subdivisionsByBar ?? [:],
                 isPreviewing: isPreviewing,
                 onSubdivisionChange: onSubdivisionChange,
@@ -120,6 +121,7 @@ private struct InspectorBarTab: View {
     let bars: [ChordChartBarEntry]
     @Binding var selectedBar: Int?
     @ObservedObject var sectionStore: SectionStore
+    @ObservedObject var jobManager: JobManager
     let subdivisions: [Int: Int]
     /// True while the chart shows unapplied tuning. The preview renumbers bars,
     /// so an edit keyed by the bar on screen would land on a different one.
@@ -133,6 +135,7 @@ private struct InspectorBarTab: View {
     @State private var confirmingMerge = false
     /// Read once per job rather than on every body pass — it parses a file.
     @State private var candidateCount = 0
+    @State private var structureError: String?
 
     private var entry: ChordChartBarEntry? {
         guard let selectedBar else { return nil }
@@ -176,19 +179,30 @@ private struct InspectorBarTab: View {
                 GroupLabel("All sections")
                 InfoRow(label: "Sections", value: "\(sectionStore.sections.count)")
 
-                if job != nil {
+                if let job {
                     let repeats = candidateCount
+                    let audio = sectionStore.hasAudioBoundaries(for: job)
+                    // One action: a separate "refresh suggestions" button updated
+                    // evidence the chart never showed, and read as broken.
                     Button {
                         confirmingAutoDetect = true
                     } label: {
-                        Label("Detect sections again", systemImage: "wand.and.stars")
+                        Label(jobManager.structureAnalyzingSongID == job.songDocumentID
+                              ? "Analysing audio…" : "Detect sections again", systemImage: "wand.and.stars")
                             .frame(maxWidth: .infinity)
                     }
                     .controlSize(.small)
-                    .disabled(repeats == 0)
-                    InspectorHint(repeats == 0
-                                  ? "No repeating passages were detected in this chart."
-                                  : "Rebuilds the split from the \(repeats) repeating passages found, replacing your current sections.")
+                    .disabled((repeats == 0 && !job.hasAudio) || jobManager.isBusy || isPreviewing)
+                    InspectorHint(job.hasAudio
+                                  ? "Analyses the saved audio again, vocals included, then replaces your current sections with the suggestions. Review them before export."
+                                  : repeats == 0
+                                    ? "No repeating passages were detected in this chart."
+                                    : audio
+                                      ? "Uses detected changes in the audio, replacing your current section split. Review the boundaries before export."
+                                      : "Rebuilds the split from the \(repeats) repeating passages found, replacing your current sections.")
+                    if let structureError {
+                        InspectorHint(structureError)
+                    }
                 }
 
                 Button(role: .destructive) {
@@ -202,11 +216,11 @@ private struct InspectorBarTab: View {
                 .confirmationDialog("Replace the current sections?",
                                     isPresented: $confirmingAutoDetect, titleVisibility: .visible) {
                     Button("Detect again", role: .destructive) {
-                        if let job { sectionStore.autoDetectSections(for: job) }
+                        if let job { Task { await detectSectionsAgain(job) } }
                     }
                     Button("Cancel", role: .cancel) {}
                 } message: {
-                    Text("Every split you have made and every section you have renamed is replaced by the detected repeats. This cannot be undone.")
+                    Text("Every split you have made and every section you have renamed is replaced by the analysis suggestions. This cannot be undone.")
                 }
                 .confirmationDialog("Merge every section into one?",
                                     isPresented: $confirmingMerge, titleVisibility: .visible) {
@@ -217,6 +231,20 @@ private struct InspectorBarTab: View {
                 }
             }
         }
+    }
+
+    /// Saved suggestions can come from an older analysis engine, so ask the
+    /// current one first. If it cannot answer, the saved suggestions still apply.
+    private func detectSectionsAgain(_ job: AnalysisJob) async {
+        var current = job
+        if let songID = job.songDocumentID, job.hasAudio {
+            structureError = await jobManager.refreshAudioStructure(songID: songID)
+            current = jobManager.job(for: songID) ?? job
+        }
+        // The owner may have opened another song while the audio was analysed.
+        guard sectionStore.isLoaded(for: current) else { return }
+        sectionStore.autoDetectSections(for: current)
+        candidateCount = sectionStore.candidateCount(for: current)
     }
 
     // MARK: Header
@@ -464,6 +492,18 @@ private struct InspectorTuningTab: View {
                 .labelsHidden()
                 .controlSize(.small)
                 .frame(width: 118)
+            }
+
+            if let path = job?.beatDetectionPath,
+               let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+               let detected = JobManager.inferredBeatAlignment(from: data, beatsPerBar: tuning.beatsPerBar),
+               !tuning.halved {
+                Button("Use detected pickup (\(detected))") { tuning.offset = detected }
+                    .controlSize(.small)
+                    .disabled(tuning.offset == detected)
+                InspectorHint("New analyses use the detected first downbeat. Saved pickup choices stay as you set them.")
+            } else {
+                InspectorHint("Re-detect beats to find the first downbeat automatically.")
             }
 
             HStack(spacing: 8) {

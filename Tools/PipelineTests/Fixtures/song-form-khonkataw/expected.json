@@ -1,0 +1,1084 @@
+{
+ "key": "D",
+ "sections": [
+  {
+   "title": "Intro",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "N.C."
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Prelude",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Section 1",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Section 2",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Section 3",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Section 4",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Instrumental",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Section 5",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Section 6",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Section 7",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Section 8",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "EM7"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 1fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 6,
+     "structure": "1fr 2fr",
+     "chords": [
+      "A",
+      "D"
+     ],
+     "hold": false
+    }
+   ]
+  },
+  {
+   "title": "Outro",
+   "bars": [
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "BM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr 3fr",
+     "chords": [
+      "BM",
+      "EM"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "A"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    },
+    {
+     "beats": 4,
+     "structure": "1fr",
+     "chords": [
+      "D"
+     ],
+     "hold": false
+    }
+   ]
+  }
+ ]
+}

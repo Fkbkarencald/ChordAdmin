@@ -1,0 +1,2579 @@
+{
+  "alignment": {
+    "confidenceKind": "mean model downbeat activation at decoded bar starts; not calibrated",
+    "firstDownbeatTime": 1.92,
+    "meterSource": "requested",
+    "method": "madmom-joint-downbeat-v1"
+  },
+  "alignmentConfidence": 0.524,
+  "beatCount": 408,
+  "beats": [
+    {
+      "beatInBar": 3,
+      "confidence": 0.0304,
+      "position": 3,
+      "time": 0.46
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.4299,
+      "position": 4,
+      "time": 1.21
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.1092,
+      "position": 1,
+      "time": 1.92
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.4742,
+      "position": 2,
+      "time": 2.7
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.2287,
+      "position": 3,
+      "time": 3.42
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.3859,
+      "position": 4,
+      "time": 4.16
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4481,
+      "position": 1,
+      "time": 4.89
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.5886,
+      "position": 2,
+      "time": 5.63
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.1954,
+      "position": 3,
+      "time": 6.38
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.4261,
+      "position": 4,
+      "time": 7.14
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4562,
+      "position": 1,
+      "time": 7.88
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.5684,
+      "position": 2,
+      "time": 8.62
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.1727,
+      "position": 3,
+      "time": 9.36
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.399,
+      "position": 4,
+      "time": 10.1
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.2968,
+      "position": 1,
+      "time": 10.84
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.0663,
+      "position": 2,
+      "time": 11.58
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.1788,
+      "position": 3,
+      "time": 12.32
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.1458,
+      "position": 4,
+      "time": 13.04
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.0058,
+      "position": 1,
+      "time": 13.8
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.3619,
+      "position": 2,
+      "time": 14.55
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4795,
+      "position": 3,
+      "time": 15.29
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.5118,
+      "position": 4,
+      "time": 16.0
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4672,
+      "position": 1,
+      "time": 16.77
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.5439,
+      "position": 2,
+      "time": 17.51
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.2253,
+      "position": 3,
+      "time": 18.22
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.2948,
+      "position": 4,
+      "time": 18.97
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.1648,
+      "position": 1,
+      "time": 19.72
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.3216,
+      "position": 2,
+      "time": 20.47
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.2997,
+      "position": 3,
+      "time": 21.18
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.3346,
+      "position": 4,
+      "time": 21.94
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.1734,
+      "position": 1,
+      "time": 22.69
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.5818,
+      "position": 2,
+      "time": 23.42
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.2235,
+      "position": 3,
+      "time": 24.15
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.4565,
+      "position": 4,
+      "time": 24.9
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.0586,
+      "position": 1,
+      "time": 25.67
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.1813,
+      "position": 2,
+      "time": 26.42
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.2336,
+      "position": 3,
+      "time": 27.14
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.3612,
+      "position": 4,
+      "time": 27.9
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.2984,
+      "position": 1,
+      "time": 28.62
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.4457,
+      "position": 2,
+      "time": 29.37
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.3526,
+      "position": 3,
+      "time": 30.08
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.1564,
+      "position": 4,
+      "time": 30.84
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.2796,
+      "position": 1,
+      "time": 31.55
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.1677,
+      "position": 2,
+      "time": 32.29
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.3863,
+      "position": 3,
+      "time": 33.02
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6098,
+      "position": 4,
+      "time": 33.77
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.2218,
+      "position": 1,
+      "time": 34.53
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.123,
+      "position": 2,
+      "time": 35.28
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4153,
+      "position": 3,
+      "time": 36.0
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.4916,
+      "position": 4,
+      "time": 36.75
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6686,
+      "position": 1,
+      "time": 37.49
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7451,
+      "position": 2,
+      "time": 38.22
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6364,
+      "position": 3,
+      "time": 38.97
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7298,
+      "position": 4,
+      "time": 39.7
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.7208,
+      "position": 1,
+      "time": 40.45
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7562,
+      "position": 2,
+      "time": 41.2
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5925,
+      "position": 3,
+      "time": 41.95
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.778,
+      "position": 4,
+      "time": 42.66
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.7016,
+      "position": 1,
+      "time": 43.4
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7502,
+      "position": 2,
+      "time": 44.15
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6418,
+      "position": 3,
+      "time": 44.88
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7344,
+      "position": 4,
+      "time": 45.62
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6585,
+      "position": 1,
+      "time": 46.35
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7712,
+      "position": 2,
+      "time": 47.11
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6523,
+      "position": 3,
+      "time": 47.87
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7735,
+      "position": 4,
+      "time": 48.6
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6147,
+      "position": 1,
+      "time": 49.32
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.678,
+      "position": 2,
+      "time": 50.08
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.7062,
+      "position": 3,
+      "time": 50.83
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7339,
+      "position": 4,
+      "time": 51.55
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6939,
+      "position": 1,
+      "time": 52.29
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.767,
+      "position": 2,
+      "time": 53.03
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.7649,
+      "position": 3,
+      "time": 53.79
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.782,
+      "position": 4,
+      "time": 54.51
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.7116,
+      "position": 1,
+      "time": 55.24
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7725,
+      "position": 2,
+      "time": 55.98
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6328,
+      "position": 3,
+      "time": 56.72
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7622,
+      "position": 4,
+      "time": 57.48
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6932,
+      "position": 1,
+      "time": 58.22
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7509,
+      "position": 2,
+      "time": 58.96
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6289,
+      "position": 3,
+      "time": 59.69
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.5952,
+      "position": 4,
+      "time": 60.44
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6277,
+      "position": 1,
+      "time": 61.16
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7785,
+      "position": 2,
+      "time": 61.91
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4611,
+      "position": 3,
+      "time": 62.66
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7118,
+      "position": 4,
+      "time": 63.4
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5659,
+      "position": 1,
+      "time": 64.15
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.6265,
+      "position": 2,
+      "time": 64.88
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4794,
+      "position": 3,
+      "time": 65.62
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7765,
+      "position": 4,
+      "time": 66.36
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6074,
+      "position": 1,
+      "time": 67.1
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.8064,
+      "position": 2,
+      "time": 67.84
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4845,
+      "position": 3,
+      "time": 68.58
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.697,
+      "position": 4,
+      "time": 69.33
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.593,
+      "position": 1,
+      "time": 70.06
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7465,
+      "position": 2,
+      "time": 70.8
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5232,
+      "position": 3,
+      "time": 71.53
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6741,
+      "position": 4,
+      "time": 72.29
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5939,
+      "position": 1,
+      "time": 73.03
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7751,
+      "position": 2,
+      "time": 73.77
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.527,
+      "position": 3,
+      "time": 74.51
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6111,
+      "position": 4,
+      "time": 75.25
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6021,
+      "position": 1,
+      "time": 75.98
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7409,
+      "position": 2,
+      "time": 76.72
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4997,
+      "position": 3,
+      "time": 77.47
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7296,
+      "position": 4,
+      "time": 78.2
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6299,
+      "position": 1,
+      "time": 78.94
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7642,
+      "position": 2,
+      "time": 79.69
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5328,
+      "position": 3,
+      "time": 80.43
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7292,
+      "position": 4,
+      "time": 81.17
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4678,
+      "position": 1,
+      "time": 81.9
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7286,
+      "position": 2,
+      "time": 82.66
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4418,
+      "position": 3,
+      "time": 83.39
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7456,
+      "position": 4,
+      "time": 84.14
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.3329,
+      "position": 1,
+      "time": 84.88
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.4884,
+      "position": 2,
+      "time": 85.62
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5198,
+      "position": 3,
+      "time": 86.34
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7466,
+      "position": 4,
+      "time": 87.09
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5851,
+      "position": 1,
+      "time": 87.79
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7396,
+      "position": 2,
+      "time": 88.56
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6172,
+      "position": 3,
+      "time": 89.31
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7156,
+      "position": 4,
+      "time": 90.05
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6949,
+      "position": 1,
+      "time": 90.79
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.718,
+      "position": 2,
+      "time": 91.54
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5927,
+      "position": 3,
+      "time": 92.28
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.719,
+      "position": 4,
+      "time": 93.01
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6843,
+      "position": 1,
+      "time": 93.76
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.689,
+      "position": 2,
+      "time": 94.5
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6275,
+      "position": 3,
+      "time": 95.25
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7213,
+      "position": 4,
+      "time": 95.99
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.7043,
+      "position": 1,
+      "time": 96.75
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.759,
+      "position": 2,
+      "time": 97.47
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.62,
+      "position": 3,
+      "time": 98.21
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6757,
+      "position": 4,
+      "time": 98.94
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6973,
+      "position": 1,
+      "time": 99.68
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7631,
+      "position": 2,
+      "time": 100.42
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5225,
+      "position": 3,
+      "time": 101.15
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6899,
+      "position": 4,
+      "time": 101.89
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6266,
+      "position": 1,
+      "time": 102.64
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7614,
+      "position": 2,
+      "time": 103.39
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6003,
+      "position": 3,
+      "time": 104.13
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6934,
+      "position": 4,
+      "time": 104.86
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.546,
+      "position": 1,
+      "time": 105.61
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7076,
+      "position": 2,
+      "time": 106.35
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4768,
+      "position": 3,
+      "time": 107.09
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6504,
+      "position": 4,
+      "time": 107.83
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5418,
+      "position": 1,
+      "time": 108.56
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7234,
+      "position": 2,
+      "time": 109.31
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.422,
+      "position": 3,
+      "time": 110.04
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6874,
+      "position": 4,
+      "time": 110.79
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4372,
+      "position": 1,
+      "time": 111.53
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7183,
+      "position": 2,
+      "time": 112.29
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4505,
+      "position": 3,
+      "time": 113.01
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7195,
+      "position": 4,
+      "time": 113.75
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5271,
+      "position": 1,
+      "time": 114.49
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7003,
+      "position": 2,
+      "time": 115.24
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4271,
+      "position": 3,
+      "time": 115.97
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6677,
+      "position": 4,
+      "time": 116.71
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4932,
+      "position": 1,
+      "time": 117.44
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7233,
+      "position": 2,
+      "time": 118.19
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4422,
+      "position": 3,
+      "time": 118.93
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6568,
+      "position": 4,
+      "time": 119.67
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5108,
+      "position": 1,
+      "time": 120.42
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7142,
+      "position": 2,
+      "time": 121.15
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4687,
+      "position": 3,
+      "time": 121.89
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.5939,
+      "position": 4,
+      "time": 122.64
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4577,
+      "position": 1,
+      "time": 123.37
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.75,
+      "position": 2,
+      "time": 124.11
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4038,
+      "position": 3,
+      "time": 124.85
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7512,
+      "position": 4,
+      "time": 125.6
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4534,
+      "position": 1,
+      "time": 126.34
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7483,
+      "position": 2,
+      "time": 127.09
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.2623,
+      "position": 3,
+      "time": 127.83
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7255,
+      "position": 4,
+      "time": 128.56
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4137,
+      "position": 1,
+      "time": 129.29
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.6773,
+      "position": 2,
+      "time": 130.05
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.3777,
+      "position": 3,
+      "time": 130.78
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7043,
+      "position": 4,
+      "time": 131.52
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.391,
+      "position": 1,
+      "time": 132.23
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.5392,
+      "position": 2,
+      "time": 132.97
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.748,
+      "position": 3,
+      "time": 133.71
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7158,
+      "position": 4,
+      "time": 134.43
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6543,
+      "position": 1,
+      "time": 135.17
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7782,
+      "position": 2,
+      "time": 135.95
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6353,
+      "position": 3,
+      "time": 136.67
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6496,
+      "position": 4,
+      "time": 137.43
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6116,
+      "position": 1,
+      "time": 138.17
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.759,
+      "position": 2,
+      "time": 138.91
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6699,
+      "position": 3,
+      "time": 139.65
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7098,
+      "position": 4,
+      "time": 140.4
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6877,
+      "position": 1,
+      "time": 141.14
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7606,
+      "position": 2,
+      "time": 141.89
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6658,
+      "position": 3,
+      "time": 142.62
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7596,
+      "position": 4,
+      "time": 143.37
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6932,
+      "position": 1,
+      "time": 144.1
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7223,
+      "position": 2,
+      "time": 144.84
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6897,
+      "position": 3,
+      "time": 145.57
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.5139,
+      "position": 4,
+      "time": 146.32
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.7111,
+      "position": 1,
+      "time": 147.04
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7081,
+      "position": 2,
+      "time": 147.81
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6696,
+      "position": 3,
+      "time": 148.54
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7026,
+      "position": 4,
+      "time": 149.29
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.7077,
+      "position": 1,
+      "time": 150.02
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7913,
+      "position": 2,
+      "time": 150.77
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6314,
+      "position": 3,
+      "time": 151.51
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6103,
+      "position": 4,
+      "time": 152.23
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5709,
+      "position": 1,
+      "time": 152.98
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7092,
+      "position": 2,
+      "time": 153.74
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5234,
+      "position": 3,
+      "time": 154.46
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7049,
+      "position": 4,
+      "time": 155.21
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6551,
+      "position": 1,
+      "time": 155.94
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7379,
+      "position": 2,
+      "time": 156.69
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.7194,
+      "position": 3,
+      "time": 157.45
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6042,
+      "position": 4,
+      "time": 158.18
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5384,
+      "position": 1,
+      "time": 158.92
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7445,
+      "position": 2,
+      "time": 159.66
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4417,
+      "position": 3,
+      "time": 160.39
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.72,
+      "position": 4,
+      "time": 161.13
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5659,
+      "position": 1,
+      "time": 161.87
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.6901,
+      "position": 2,
+      "time": 162.6
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4813,
+      "position": 3,
+      "time": 163.36
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7359,
+      "position": 4,
+      "time": 164.11
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5206,
+      "position": 1,
+      "time": 164.84
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7188,
+      "position": 2,
+      "time": 165.58
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4003,
+      "position": 3,
+      "time": 166.32
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6736,
+      "position": 4,
+      "time": 167.07
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4803,
+      "position": 1,
+      "time": 167.8
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.6864,
+      "position": 2,
+      "time": 168.54
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4901,
+      "position": 3,
+      "time": 169.28
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7499,
+      "position": 4,
+      "time": 170.04
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6226,
+      "position": 1,
+      "time": 170.76
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7351,
+      "position": 2,
+      "time": 171.51
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5918,
+      "position": 3,
+      "time": 172.25
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.5994,
+      "position": 4,
+      "time": 172.99
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6204,
+      "position": 1,
+      "time": 173.71
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7776,
+      "position": 2,
+      "time": 174.47
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6108,
+      "position": 3,
+      "time": 175.22
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7304,
+      "position": 4,
+      "time": 175.96
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6722,
+      "position": 1,
+      "time": 176.69
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7962,
+      "position": 2,
+      "time": 177.43
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6666,
+      "position": 3,
+      "time": 178.17
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7491,
+      "position": 4,
+      "time": 178.91
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6259,
+      "position": 1,
+      "time": 179.64
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7611,
+      "position": 2,
+      "time": 180.4
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5892,
+      "position": 3,
+      "time": 181.13
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6969,
+      "position": 4,
+      "time": 181.88
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5878,
+      "position": 1,
+      "time": 182.63
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7233,
+      "position": 2,
+      "time": 183.36
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.599,
+      "position": 3,
+      "time": 184.1
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6449,
+      "position": 4,
+      "time": 184.84
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5635,
+      "position": 1,
+      "time": 185.54
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7336,
+      "position": 2,
+      "time": 186.31
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6672,
+      "position": 3,
+      "time": 187.04
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.712,
+      "position": 4,
+      "time": 187.78
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.7115,
+      "position": 1,
+      "time": 188.52
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7479,
+      "position": 2,
+      "time": 189.27
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6933,
+      "position": 3,
+      "time": 190.01
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.699,
+      "position": 4,
+      "time": 190.74
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5018,
+      "position": 1,
+      "time": 191.47
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.6797,
+      "position": 2,
+      "time": 192.24
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6896,
+      "position": 3,
+      "time": 192.97
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.694,
+      "position": 4,
+      "time": 193.72
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.659,
+      "position": 1,
+      "time": 194.47
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7562,
+      "position": 2,
+      "time": 195.2
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6875,
+      "position": 3,
+      "time": 195.93
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6928,
+      "position": 4,
+      "time": 196.68
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6354,
+      "position": 1,
+      "time": 197.42
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.8022,
+      "position": 2,
+      "time": 198.15
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.629,
+      "position": 3,
+      "time": 198.87
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7582,
+      "position": 4,
+      "time": 199.64
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.7265,
+      "position": 1,
+      "time": 200.38
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7854,
+      "position": 2,
+      "time": 201.12
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6698,
+      "position": 3,
+      "time": 201.86
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6557,
+      "position": 4,
+      "time": 202.6
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5535,
+      "position": 1,
+      "time": 203.33
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7269,
+      "position": 2,
+      "time": 204.09
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5354,
+      "position": 3,
+      "time": 204.82
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6332,
+      "position": 4,
+      "time": 205.57
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.3499,
+      "position": 1,
+      "time": 206.32
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.696,
+      "position": 2,
+      "time": 207.05
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5814,
+      "position": 3,
+      "time": 207.77
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.5071,
+      "position": 4,
+      "time": 208.49
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.456,
+      "position": 1,
+      "time": 209.22
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.6844,
+      "position": 2,
+      "time": 210.01
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.551,
+      "position": 3,
+      "time": 210.74
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7561,
+      "position": 4,
+      "time": 211.49
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5803,
+      "position": 1,
+      "time": 212.23
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7344,
+      "position": 2,
+      "time": 212.98
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4914,
+      "position": 3,
+      "time": 213.72
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7546,
+      "position": 4,
+      "time": 214.46
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5342,
+      "position": 1,
+      "time": 215.18
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7571,
+      "position": 2,
+      "time": 215.91
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5033,
+      "position": 3,
+      "time": 216.67
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6658,
+      "position": 4,
+      "time": 217.42
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4865,
+      "position": 1,
+      "time": 218.15
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7748,
+      "position": 2,
+      "time": 218.9
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4618,
+      "position": 3,
+      "time": 219.62
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6872,
+      "position": 4,
+      "time": 220.37
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4883,
+      "position": 1,
+      "time": 221.1
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7422,
+      "position": 2,
+      "time": 221.85
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5234,
+      "position": 3,
+      "time": 222.59
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7795,
+      "position": 4,
+      "time": 223.33
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5529,
+      "position": 1,
+      "time": 224.07
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.808,
+      "position": 2,
+      "time": 224.82
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4223,
+      "position": 3,
+      "time": 225.55
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7141,
+      "position": 4,
+      "time": 226.29
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4564,
+      "position": 1,
+      "time": 227.02
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7295,
+      "position": 2,
+      "time": 227.77
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.4487,
+      "position": 3,
+      "time": 228.5
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7606,
+      "position": 4,
+      "time": 229.24
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.4459,
+      "position": 1,
+      "time": 229.97
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.5618,
+      "position": 2,
+      "time": 230.72
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6372,
+      "position": 3,
+      "time": 231.47
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7076,
+      "position": 4,
+      "time": 232.21
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6072,
+      "position": 1,
+      "time": 232.94
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7847,
+      "position": 2,
+      "time": 233.7
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6256,
+      "position": 3,
+      "time": 234.43
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7425,
+      "position": 4,
+      "time": 235.17
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6949,
+      "position": 1,
+      "time": 235.91
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.753,
+      "position": 2,
+      "time": 236.65
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5925,
+      "position": 3,
+      "time": 237.39
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6396,
+      "position": 4,
+      "time": 238.13
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5755,
+      "position": 1,
+      "time": 238.87
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.6898,
+      "position": 2,
+      "time": 239.61
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6499,
+      "position": 3,
+      "time": 240.36
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6978,
+      "position": 4,
+      "time": 241.11
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6473,
+      "position": 1,
+      "time": 241.84
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7312,
+      "position": 2,
+      "time": 242.59
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6751,
+      "position": 3,
+      "time": 243.33
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.71,
+      "position": 4,
+      "time": 244.07
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6113,
+      "position": 1,
+      "time": 244.82
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.8051,
+      "position": 2,
+      "time": 245.56
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5703,
+      "position": 3,
+      "time": 246.29
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.739,
+      "position": 4,
+      "time": 247.03
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6808,
+      "position": 1,
+      "time": 247.77
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.815,
+      "position": 2,
+      "time": 248.51
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6368,
+      "position": 3,
+      "time": 249.25
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.5518,
+      "position": 4,
+      "time": 250.0
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5442,
+      "position": 1,
+      "time": 250.72
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7215,
+      "position": 2,
+      "time": 251.47
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.5285,
+      "position": 3,
+      "time": 252.2
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6728,
+      "position": 4,
+      "time": 252.94
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.53,
+      "position": 1,
+      "time": 253.67
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7172,
+      "position": 2,
+      "time": 254.41
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.605,
+      "position": 3,
+      "time": 255.16
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7214,
+      "position": 4,
+      "time": 255.88
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5881,
+      "position": 1,
+      "time": 256.6
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.657,
+      "position": 2,
+      "time": 257.4
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6671,
+      "position": 3,
+      "time": 258.12
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7171,
+      "position": 4,
+      "time": 258.86
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6636,
+      "position": 1,
+      "time": 259.6
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.6829,
+      "position": 2,
+      "time": 260.36
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6696,
+      "position": 3,
+      "time": 261.08
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6991,
+      "position": 4,
+      "time": 261.83
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.58,
+      "position": 1,
+      "time": 262.55
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7682,
+      "position": 2,
+      "time": 263.31
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.7078,
+      "position": 3,
+      "time": 264.05
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7081,
+      "position": 4,
+      "time": 264.78
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5749,
+      "position": 1,
+      "time": 265.53
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.757,
+      "position": 2,
+      "time": 266.27
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6488,
+      "position": 3,
+      "time": 267.0
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.671,
+      "position": 4,
+      "time": 267.75
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6129,
+      "position": 1,
+      "time": 268.5
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7294,
+      "position": 2,
+      "time": 269.24
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6622,
+      "position": 3,
+      "time": 269.96
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7673,
+      "position": 4,
+      "time": 270.71
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6666,
+      "position": 1,
+      "time": 271.46
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7899,
+      "position": 2,
+      "time": 272.2
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6565,
+      "position": 3,
+      "time": 272.92
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6319,
+      "position": 4,
+      "time": 273.67
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6533,
+      "position": 1,
+      "time": 274.4
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7721,
+      "position": 2,
+      "time": 275.15
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6464,
+      "position": 3,
+      "time": 275.89
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.6911,
+      "position": 4,
+      "time": 276.65
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6713,
+      "position": 1,
+      "time": 277.39
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7678,
+      "position": 2,
+      "time": 278.13
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.6997,
+      "position": 3,
+      "time": 278.86
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7441,
+      "position": 4,
+      "time": 279.6
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.6149,
+      "position": 1,
+      "time": 280.32
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.7462,
+      "position": 2,
+      "time": 281.07
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.3478,
+      "position": 3,
+      "time": 281.79
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.7433,
+      "position": 4,
+      "time": 282.55
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.5373,
+      "position": 1,
+      "time": 283.34
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.1546,
+      "position": 2,
+      "time": 284.14
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.0236,
+      "position": 3,
+      "time": 284.85
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.0299,
+      "position": 4,
+      "time": 285.57
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.0086,
+      "position": 1,
+      "time": 286.31
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.0168,
+      "position": 2,
+      "time": 287.03
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.0106,
+      "position": 3,
+      "time": 287.77
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.04,
+      "position": 4,
+      "time": 288.48
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.2329,
+      "position": 1,
+      "time": 289.25
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.1929,
+      "position": 2,
+      "time": 289.97
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.1095,
+      "position": 3,
+      "time": 290.71
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.2597,
+      "position": 4,
+      "time": 291.46
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.3788,
+      "position": 1,
+      "time": 292.23
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.2429,
+      "position": 2,
+      "time": 292.98
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.1535,
+      "position": 3,
+      "time": 293.74
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.0108,
+      "position": 4,
+      "time": 294.52
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.1704,
+      "position": 1,
+      "time": 295.25
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.3762,
+      "position": 2,
+      "time": 296.03
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.114,
+      "position": 3,
+      "time": 296.82
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.0923,
+      "position": 4,
+      "time": 297.61
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.1216,
+      "position": 1,
+      "time": 298.36
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.1346,
+      "position": 2,
+      "time": 299.21
+    },
+    {
+      "beatInBar": 3,
+      "confidence": 0.092,
+      "position": 3,
+      "time": 299.92
+    },
+    {
+      "beatInBar": 4,
+      "confidence": 0.1158,
+      "position": 4,
+      "time": 300.61
+    },
+    {
+      "beatInBar": 1,
+      "confidence": 0.0226,
+      "position": 1,
+      "time": 301.34
+    },
+    {
+      "beatInBar": 2,
+      "confidence": 0.0453,
+      "position": 2,
+      "time": 302.03
+    }
+  ],
+  "beatsPerBar": 4,
+  "bpm": 81.08,
+  "downbeats": [
+    1.92,
+    4.89,
+    7.88,
+    10.84,
+    13.8,
+    16.77,
+    19.72,
+    22.69,
+    25.67,
+    28.62,
+    31.55,
+    34.53,
+    37.49,
+    40.45,
+    43.4,
+    46.35,
+    49.32,
+    52.29,
+    55.24,
+    58.22,
+    61.16,
+    64.15,
+    67.1,
+    70.06,
+    73.03,
+    75.98,
+    78.94,
+    81.9,
+    84.88,
+    87.79,
+    90.79,
+    93.76,
+    96.75,
+    99.68,
+    102.64,
+    105.61,
+    108.56,
+    111.53,
+    114.49,
+    117.44,
+    120.42,
+    123.37,
+    126.34,
+    129.29,
+    132.23,
+    135.17,
+    138.17,
+    141.14,
+    144.1,
+    147.04,
+    150.02,
+    152.98,
+    155.94,
+    158.92,
+    161.87,
+    164.84,
+    167.8,
+    170.76,
+    173.71,
+    176.69,
+    179.64,
+    182.63,
+    185.54,
+    188.52,
+    191.47,
+    194.47,
+    197.42,
+    200.38,
+    203.33,
+    206.32,
+    209.22,
+    212.23,
+    215.18,
+    218.15,
+    221.1,
+    224.07,
+    227.02,
+    229.97,
+    232.94,
+    235.91,
+    238.87,
+    241.84,
+    244.82,
+    247.77,
+    250.72,
+    253.67,
+    256.6,
+    259.6,
+    262.55,
+    265.53,
+    268.5,
+    271.46,
+    274.4,
+    277.39,
+    280.32,
+    283.34,
+    286.31,
+    289.25,
+    292.23,
+    295.25,
+    298.36,
+    301.34
+  ],
+  "model": "madmom",
+  "raw": {
+    "analysisVersion": "joint-downbeat-v1",
+    "backend": "madmom",
+    "beats_per_bar": 4,
+    "max_bpm": 215.0,
+    "min_bpm": 55.0,
+    "transition_lambda": 100.0
+  },
+  "status": "success",
+  "suggestedPickupBeats": 2,
+  "timeSignature": "4/4",
+  "warnings": []
+}

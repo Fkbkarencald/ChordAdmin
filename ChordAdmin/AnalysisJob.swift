@@ -267,11 +267,20 @@ nonisolated struct AnalysisJob: Codable, Identifiable, Sendable {
     var chordChartBarCount: Int?
     var chordChartPreview: [ChordChartBarEntry]?
     var sectionCandidatesPath: String?
+    /// Acoustic boundary evidence, kept separately from the owner's section edits.
+    var audioStructurePath: String?
     var sectionCandidateCount: Int?
     var sectionCandidatePreview: [SectionCandidate]?
     var sectionsPath: String?
     var sectionCount: Int?
     var barAlignmentOffset: Int?
+    /// True once the owner applies a pickup in Tuning. Only then does a new
+    /// beat track keep it; otherwise the detected downbeat replaces it.
+    var pickupChosenManually: Bool?
+    /// Bar 1's time under that manual pickup, carried across a beat track
+    /// change. The offset is a beat *count*, and a new track can start on a
+    /// different beat, so reusing the count moved bar 1.
+    var manualBarOneTime: Double?
     var beatsPerBarOverride: Int?
     var manualBpm: Double?
     var tempoHalved: Bool?
@@ -285,6 +294,12 @@ nonisolated struct AnalysisJob: Codable, Identifiable, Sendable {
     /// whole chart, not the eight-bar preview — the preview count reported a
     /// clean run for a song that was half "N.C.".
     var barsWithoutChords: Int?
+    /// The song's form (sections, bar lengths, key) read from its repeats.
+    /// When set, the beat grid and sections came from it rather than a
+    /// uniform grid; manual retuning clears it.
+    var songFormPath: String?
+    /// The key the form analysis found, in TheStageBee's spelling ("Em", "Db").
+    var songKey: String?
 
     // — Progress, edits and export —
     var stages: [StageRecord]?
