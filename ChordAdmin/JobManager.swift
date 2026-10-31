@@ -847,17 +847,20 @@ final class JobManager: ObservableObject {
             var form = Self.loadForm(job: job)
             do {
                 if let evidence = try await Self.requestAudioStructure(wavURL: wavURL, performerData: performerData) {
-                    // Where singing starts and stops helps place sections. Read the
-                    // form again with it, unless the owner has started editing.
-                    if form != nil, self.jobs[songID]?.lastEditedAt == nil,
+                    // Where singing starts and stops, and the trained structure
+                    // model's sections, place sections better than chords alone.
+                    // Read the form again with them, unless the owner has started editing.
+                    let vocals = SongForm.vocals(fromStructure: evidence)
+                    let model = SongForm.modelSections(from: evidence)
+                    if form != nil, vocals != nil || model != nil, self.jobs[songID]?.lastEditedAt == nil,
                        (try? Data(contentsOf: sectionsURL)) == sectionsBeforeAnalysis,
-                       let vocals = SongForm.vocals(fromStructure: evidence),
-                       let refreshed = try Self.reapplyForm(job: &job, folder: folder, vocals: vocals) {
+                       let refreshed = try Self.reapplyForm(job: &job, folder: folder, vocals: vocals, model: model) {
                         form = refreshed.form
                         performerData = refreshed.performerData
                         (candPayload, candCount, candPreview) = Self.detectSectionCandidates(
                             performerData: performerData, performerPath: performerPath, draftPath: draftPath)
-                        self.appendLog("Form with vocals: \(job.barCount ?? 0) bars\n", songID: songID, folder: folder)
+                        self.appendLog("Form with \(model == nil ? "vocals" : "the structure model"): \(job.barCount ?? 0) bars\n",
+                                       songID: songID, folder: folder)
                     }
                     guard let enriched = Self.addingAudioBoundaries(evidence, to: candPayload, performerData: performerData) else {
                         throw JobError.backendRejected("Audio section analysis returned unusable boundaries")

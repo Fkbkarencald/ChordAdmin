@@ -129,6 +129,10 @@ func runSongFormTests() {
           "a chart whose bars no longer match the form is exported as it is")
 
     // — Parts —
+    let modelJSON = #"{"segments":[{"start":0,"end":0.8,"label":"start"},{"start":0.8,"end":15.3,"label":"intro"},{"start":15.3,"end":29.6,"label":"verse"},{"start":346.7,"end":350,"label":"end"}]}"#
+    check(SongForm.modelSections(from: Data(modelJSON.utf8)) == [SongForm.ModelSection(start: 0.8, label: "intro"),
+                                                                 SongForm.ModelSection(start: 15.3, label: "verse")],
+          "the structure model's sections are read without its start and end markers")
     check(SongForm.Key(tonic: 8, minor: false).accidental == "b"
           && SongForm.Key(tonic: 4, minor: false).accidental == "#"
           && SongForm.Key(tonic: 5, minor: true).accidental == "b"
@@ -199,6 +203,17 @@ func runSongFormTests() {
               "vocal timing that changes the form rebuilds the chart from it")
         check((try? JobManager.reapplyForm(job: &job, folder: work, vocals: vocals)) == nil,
               "the same vocal timing a second time changes nothing and rebuilds nothing")
+        // The structure model's sections, as the backend's response carries them.
+        if let saved = try? Data(contentsOf: folder.appendingPathComponent("structure.model.json")),
+           let segments = (try? JSONSerialization.jsonObject(with: saved) as? [String: Any])?["segments"],
+           let response = try? JSONSerialization.data(withJSONObject: ["modelSegments": segments]),
+           let model = SongForm.modelSections(from: response) {
+            let withModel = try? JobManager.reapplyForm(job: &job, folder: work, vocals: realVocals, model: model)
+            check(withModel != nil && JobManager.loadForm(job: job) == withModel?.form,
+                  "the structure model's sections from the backend re-read the form and rebuild the chart")
+        } else {
+            check(false, "the reference song has a saved structure model run")
+        }
     } else {
         check(false, "the reference song's form and chart build in a scratch folder")
     }
@@ -216,29 +231,47 @@ func runSongFormCorpusTests() {
     func json(_ url: URL) -> [String: Any]? {
         (try? Data(contentsOf: url)).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
     }
-    var total = 0, songs = 0
+    // Scored twice: from chords and vocals alone, and with the trained
+    // structure model's sections, as the app runs it when the model is there.
+    var totals = (chords: 0, model: 0), songs = 0, modelled = 0
     for name in names {
         let folder = root.appendingPathComponent(name)
         guard let truth = json(folder.appendingPathComponent("truth.json"))?["sectionStarts"] as? [NSNumber],
               let meta = json(folder.appendingPathComponent("meta.json")),
               let beats = try? Data(contentsOf: folder.appendingPathComponent("beat.detection.json")),
+              let beatJSON = json(folder.appendingPathComponent("beat.detection.json")),
               let chords = try? Data(contentsOf: folder.appendingPathComponent("chord.cleaned.json")) else { continue }
         // The backend's per-bar vocal activity, as the app receives it.
         let vocalData = try? Data(contentsOf: folder.appendingPathComponent("vocals.backend.json"))
-        guard let form = SongForm.analyse(beatData: beats, cleanedChordData: chords,
-                                          audioEnd: (meta["audioEnd"] as? NSNumber)?.doubleValue,
-                                          vocals: vocalData.flatMap { SongForm.vocals(fromStructure: $0) }) else {
+        let vocals = vocalData.flatMap { SongForm.vocals(fromStructure: $0) }
+        let model = (try? Data(contentsOf: folder.appendingPathComponent("structure.model.json")))
+            .flatMap { SongForm.modelSections(from: $0) }
+        // Bar 1 on the detected downbeat, as the app places it.
+        let times = (beatJSON["beats"] as? [[String: Any]] ?? []).compactMap { ($0["time"] as? NSNumber)?.doubleValue }
+        let firstDownbeat = ((beatJSON["alignment"] as? [String: Any])?["firstDownbeatTime"] as? NSNumber)?.doubleValue
+        let downbeat = firstDownbeat.flatMap { t in times.indices.min { abs(times[$0] - t) < abs(times[$1] - t) } } ?? 0
+        let expected = truth.map(\.doubleValue)
+        func errors(_ model: [SongForm.ModelSection]?) -> (missed: Int, extra: Int)? {
+            guard let form = SongForm.analyse(beatData: beats, cleanedChordData: chords,
+                                              audioEnd: (meta["audioEnd"] as? NSNumber)?.doubleValue,
+                                              downbeat: downbeat, vocals: vocals, model: model) else { return nil }
+            let starts = form.sections.dropFirst().map { form.beatEdges[$0.startBeat] }
+            return (expected.filter { t in !starts.contains { abs($0 - t) < 0.6 } }.count,
+                    starts.filter { t in !expected.contains { abs($0 - t) < 0.6 } }.count)
+        }
+        guard let plain = errors(nil) else {
             check(false, "\(name) yields a form")
             continue
         }
-        let starts = form.sections.dropFirst().map { form.beatEdges[$0.startBeat] }
-        let expected = truth.map(\.doubleValue)
-        let missed = expected.filter { t in !starts.contains { abs($0 - t) < 0.6 } }.count
-        let extra = starts.filter { t in !expected.contains { abs($0 - t) < 0.6 } }.count
-        print("  · \(name): \(missed) missed, \(extra) extra of \(expected.count) boundaries")
-        total += missed + extra
+        let withModel = model.flatMap { errors($0) } ?? plain
+        if model != nil { modelled += 1 }
+        print("  · \(name): \(plain.missed + plain.extra) from chords, \(withModel.missed + withModel.extra) with the model, of \(expected.count) boundaries")
+        totals.chords += plain.missed + plain.extra
+        totals.model += withModel.missed + withModel.extra
         songs += 1
     }
     check(songs >= 8, "all \(songs) corrected songs are measured")
-    check(total <= 85, "boundary errors across the corrected songs stay within 85 (\(total))")
+    check(totals.chords <= 82, "boundary errors from chords and vocals stay within 82 (\(totals.chords))")
+    check(modelled >= 8 && totals.model <= 62,
+          "with the structure model's sections, boundary errors stay within 62 (\(totals.model) over \(modelled) songs)")
 }

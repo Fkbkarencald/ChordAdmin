@@ -1,0 +1,131 @@
+{
+ "source": "All-In-One (allin1 1.1.0, harmonix-all) on the analysis audio",
+ "bpm": 133,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 0.77,
+   "label": "start"
+  },
+  {
+   "start": 0.77,
+   "end": 15.3,
+   "label": "intro"
+  },
+  {
+   "start": 15.3,
+   "end": 29.62,
+   "label": "verse"
+  },
+  {
+   "start": 29.62,
+   "end": 45.74,
+   "label": "verse"
+  },
+  {
+   "start": 45.74,
+   "end": 60.08,
+   "label": "verse"
+  },
+  {
+   "start": 60.08,
+   "end": 76.2,
+   "label": "verse"
+  },
+  {
+   "start": 76.2,
+   "end": 89.64,
+   "label": "verse"
+  },
+  {
+   "start": 89.64,
+   "end": 103.96,
+   "label": "chorus"
+  },
+  {
+   "start": 103.96,
+   "end": 118.29,
+   "label": "chorus"
+  },
+  {
+   "start": 118.29,
+   "end": 133.51,
+   "label": "chorus"
+  },
+  {
+   "start": 133.51,
+   "end": 147.84,
+   "label": "bridge"
+  },
+  {
+   "start": 147.84,
+   "end": 162.17,
+   "label": "solo"
+  },
+  {
+   "start": 162.17,
+   "end": 176.5,
+   "label": "solo"
+  },
+  {
+   "start": 176.5,
+   "end": 192.62,
+   "label": "verse"
+  },
+  {
+   "start": 192.62,
+   "end": 206.95,
+   "label": "verse"
+  },
+  {
+   "start": 206.95,
+   "end": 223.07,
+   "label": "verse"
+  },
+  {
+   "start": 223.07,
+   "end": 236.5,
+   "label": "verse"
+  },
+  {
+   "start": 236.5,
+   "end": 250.83,
+   "label": "chorus"
+  },
+  {
+   "start": 250.83,
+   "end": 266.05,
+   "label": "chorus"
+  },
+  {
+   "start": 266.05,
+   "end": 282.17,
+   "label": "bridge"
+  },
+  {
+   "start": 282.17,
+   "end": 298.29,
+   "label": "chorus"
+  },
+  {
+   "start": 298.29,
+   "end": 312.62,
+   "label": "chorus"
+  },
+  {
+   "start": 312.62,
+   "end": 326.94,
+   "label": "chorus"
+  },
+  {
+   "start": 326.94,
+   "end": 346.7,
+   "label": "outro"
+  },
+  {
+   "start": 346.7,
+   "end": 346.71,
+   "label": "end"
+  }
+ ]
+}
